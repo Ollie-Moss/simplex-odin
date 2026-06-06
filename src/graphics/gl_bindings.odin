@@ -13,7 +13,7 @@ Attribute_Type :: enum u32 {
 	Byte  = gl.BYTE,
 }
 
-AttributeDesc :: struct {
+Attribute_Desc :: struct {
 	location:             u32,
 	property_vector_size: i32, // This is 1, 2, 3, or 4. Represents the amount of components in the vector
 	type:                 Attribute_Type,
@@ -21,16 +21,16 @@ AttributeDesc :: struct {
 	divsor:               u32,
 }
 
-VertexLayout :: struct {
-	attributes: []AttributeDesc,
+Vertex_Layout :: struct {
+	attributes: []Attribute_Desc,
 	stride:     i32,
 }
 
-Vertex2D :: struct {
+Vertex_2D :: struct {
 	position: vmath.vec2,
 }
 
-QuadVertex2D :: struct {
+Quad_Vertex_2D :: struct {
 	position:         vmath.vec2,
 	size:             vmath.vec2,
 	color:            vmath.vec4,
@@ -38,55 +38,57 @@ QuadVertex2D :: struct {
 	texture_size:     vmath.vec2,
 }
 
-layout_vertex2d := VertexLayout {
-	stride     = size_of(Vertex2D),
+@(rodata)
+layout_vertex_2d := Vertex_Layout {
+	stride     = size_of(Vertex_2D),
 	attributes = {
 		{
 			location = 0,
 			property_vector_size = 2,
 			type = .Float,
-			offset = offset_of(Vertex2D, position),
+			offset = offset_of(Vertex_2D, position),
 			divsor = 0,
 		},
 	},
 }
 
-layout_quad2d := VertexLayout {
-	stride     = size_of(QuadVertex2D),
+@(rodata)
+layout_quad_2d := Vertex_Layout {
+	stride     = size_of(Quad_Vertex_2D),
 	attributes = {
 		{
 			location = 1,
 			property_vector_size = 2,
 			type = .Float,
-			offset = offset_of(QuadVertex2D, position),
+			offset = offset_of(Quad_Vertex_2D, position),
 			divsor = 1,
 		},
 		{
 			location = 2,
 			property_vector_size = 2,
 			type = .Float,
-			offset = offset_of(QuadVertex2D, size),
+			offset = offset_of(Quad_Vertex_2D, size),
 			divsor = 1,
 		},
 		{
 			location = 3,
 			property_vector_size = 4,
 			type = .Float,
-			offset = offset_of(QuadVertex2D, color),
+			offset = offset_of(Quad_Vertex_2D, color),
 			divsor = 1,
 		},
 		{
 			location = 4,
 			property_vector_size = 2,
 			type = .Float,
-			offset = offset_of(QuadVertex2D, texture_position),
+			offset = offset_of(Quad_Vertex_2D, texture_position),
 			divsor = 1,
 		},
 		{
 			location = 5,
 			property_vector_size = 2,
 			type = .Float,
-			offset = offset_of(QuadVertex2D, texture_size),
+			offset = offset_of(Quad_Vertex_2D, texture_size),
 			divsor = 1,
 		},
 	},
@@ -98,7 +100,7 @@ create_vao :: proc() -> VAO {
 	return vao
 }
 
-bind_vbo :: proc(vao: VAO, vbo: VBO, layout: VertexLayout) {
+bind_vbo :: proc(vao: VAO, vbo: VBO, layout: Vertex_Layout) {
 	gl.BindVertexArray(vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 

@@ -16,7 +16,7 @@ Window :: struct {
 	windowHandle: glfw.WindowHandle,
 }
 
-WindowOptions :: struct {
+Window_Options :: struct {
 	windowSize: vmath.ivec2,
 	title:      string,
 }
@@ -40,7 +40,7 @@ init :: proc() {
 	glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 0)
 }
 
-create_window :: proc(options: WindowOptions) -> Window {
+create_window :: proc(options: Window_Options) -> Window {
 	windowHandle := glfw.CreateWindow(
 		options.windowSize.x,
 		options.windowSize.y,
