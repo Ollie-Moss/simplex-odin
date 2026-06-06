@@ -1,7 +1,5 @@
 package graphics
 
-import "../vmath"
-import "core:fmt"
 import gl "vendor:OpenGL"
 
 Mesh :: struct {

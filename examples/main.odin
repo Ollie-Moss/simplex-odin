@@ -1,13 +1,20 @@
 package example_simplex
 
-import simplex "../src/core/"
+import core "../src/core/"
 
 
 main :: proc() {
-	options := simplex.SimplexOptions {
-		windowOptions = {windowSize = {640, 480}, title = "Simplex"},
+
+	simplex := core.Simplex {
+		options = {
+			windowOptions = {windowSize = {640, 480}, title = "Simplex"},
+			backgroundColor = {0.173, 0.169, 0.180, 1.00},
+		},
 	}
 
-	simplex.init(options)
-	simplex.shutdown()
+	core.init(&simplex)
+
+	core.start(&simplex)
+
+	core.shutdown(&simplex)
 }
