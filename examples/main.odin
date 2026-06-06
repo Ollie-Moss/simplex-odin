@@ -5,12 +5,12 @@ import core "../src/core/"
 
 main :: proc() {
 
-	simplex := core.Simplex {
-		options = {
+	simplex := core.make_simplex(
+		{
 			windowOptions = {windowSize = {640, 480}, title = "Simplex"},
 			backgroundColor = {0.173, 0.169, 0.180, 1.00},
 		},
-	}
+	)
 
 	core.init(&simplex)
 

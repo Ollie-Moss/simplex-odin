@@ -15,35 +15,27 @@ Instanced_Mesh :: struct {
 	instance_vbo: VBO, // dynamic, rewritten each frame
 }
 
-update_data :: proc(mesh: ^Mesh, data: []$T) {
-	fill_vbo(mesh.vbo, data)
+create_instanced_mesh :: proc(instanced_vertices: []$T, baseMesh: Mesh) -> Instanced_Mesh {
+	instance_vbo := create_vbo()
+	bind_vbo(baseMesh.vao, instance_vbo, layout_quad_2d)
+	fill_vbo(instance_vbo, instanced_vertices)
+
+	return Instanced_Mesh{mesh = baseMesh, instance_vbo = instance_vbo}
+}
+
+destroy_instanced_mesh :: proc(instanced_mesh: ^Instanced_Mesh) {
+	destroy_mesh(&instanced_mesh.mesh)
+	destroy_vbo(&instanced_mesh.vbo)
 }
 
 update_instance_data :: proc(mesh: ^Instanced_Mesh, data: []$T) {
 	fill_vbo(mesh.instance_vbo, data)
 }
 
-create_instance_quad_mesh :: proc() -> Instanced_Mesh {
-	mesh := create_quad_mesh()
-	instance_vbo := create_vbo()
-
-	bind_vbo(mesh.vao, instance_vbo, layout_quad2d)
-
-	return Instanced_Mesh{mesh = mesh, instance_vbo = instance_vbo}
-
-}
-
-create_quad_mesh :: proc() -> Mesh {
-	vertices: []Vertex2D = {
-		{position = {0, 0}},
-		{position = {0, 1}},
-		{position = {1, 1}},
-		{position = {1, 0}},
-	}
-
-	indices: []u32 = {0, 1, 2, 0, 3, 2}
-
-	return create_mesh(vertices, indices, gl.TRIANGLES, 6, layout_vertex2d)
+draw_instanced :: proc(mesh: ^Instanced_Mesh, count: i32) {
+	gl.BindVertexArray(mesh.vao)
+	gl.DrawElementsInstanced(mesh.primitive, mesh.vertex_count, gl.UNSIGNED_INT, nil, count)
+	gl.BindVertexArray(0)
 }
 
 create_mesh :: proc(
@@ -51,7 +43,7 @@ create_mesh :: proc(
 	indices: []$TIndex,
 	primitive: u32,
 	vertex_count: i32,
-	layout: VertexLayout,
+	layout: Vertex_Layout,
 ) -> Mesh {
 	vao := create_vao()
 
@@ -60,7 +52,7 @@ create_mesh :: proc(
 	fill_vbo(vbo, vertices)
 
 	ebo := create_ebo()
-    bind_ebo(vao, ebo)
+	bind_ebo(vao, ebo)
 	fill_ebo(ebo, indices)
 
 	return Mesh {
@@ -72,14 +64,36 @@ create_mesh :: proc(
 	}
 }
 
+destroy_mesh :: proc(mesh: ^Mesh) {
+	destroy_vao(&mesh.vao)
+	destroy_vbo(&mesh.vbo)
+	destroy_ebo(&mesh.ebo)
+}
+
+update_data :: proc(mesh: ^Mesh, data: []$T) {
+	fill_vbo(mesh.vbo, data)
+}
+
 draw :: proc(mesh: ^Mesh) {
 	gl.BindVertexArray(mesh.vao)
 	gl.DrawElements(mesh.primitive, mesh.vertex_count, gl.UNSIGNED_INT, nil)
 	gl.BindVertexArray(0)
 }
 
-draw_instanced :: proc(mesh: ^Instanced_Mesh, count: i32) {
-	gl.BindVertexArray(mesh.vao)
-	gl.DrawElementsInstanced(mesh.primitive, mesh.vertex_count, gl.UNSIGNED_INT, nil, count)
-	gl.BindVertexArray(0)
+create_quad_mesh :: proc() -> Mesh {
+	vertices: []Vertex_2D = {
+		{position = {0, 0}},
+		{position = {0, 1}},
+		{position = {1, 1}},
+		{position = {1, 0}},
+	}
+
+	indices: []u32 = {0, 1, 2, 0, 3, 2}
+
+	return create_mesh(vertices, indices, gl.TRIANGLES, 6, layout_vertex_2d)
+}
+
+
+create_instanced_quad_mesh :: proc() -> Instanced_Mesh {
+	return create_instanced_mesh([]Quad_Vertex_2D{}, create_quad_mesh())
 }
