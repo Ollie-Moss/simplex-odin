@@ -167,3 +167,9 @@ destroy_vbo :: proc(vbo: ^VBO) {
 destroy_ebo :: proc(ebo: ^EBO) {
 	gl.DeleteBuffers(1, ebo)
 }
+
+
+clear_color :: proc(color: vmath.vec4) {
+	gl.ClearColor(color.r, color.g, color.b, color.w)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+}

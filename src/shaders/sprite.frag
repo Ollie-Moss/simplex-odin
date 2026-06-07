@@ -5,7 +5,6 @@ in vec2 texPos;
 in vec4 color;
 
 uniform sampler2D ourTexture;
-uniform int useTexture;
 
 void main() {
     vec4 texColor = texture(ourTexture, texPos);
@@ -13,9 +12,5 @@ void main() {
         FragColor = mix(texColor, color, color.a);
     } else {
         FragColor = texColor;
-    }
-
-    if (useTexture == 0) {
-        FragColor = color;
     }
 }

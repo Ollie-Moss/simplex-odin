@@ -35,12 +35,14 @@ init :: proc(simplex: ^Simplex) {
 
 	simplex.asset_registry = assets.make_registry()
 
-	spriteShader := assets.load_shader(
+	spriteShader := graphics.load_shader(
 		&simplex.asset_registry,
 		{vertexPath = "src/shaders/sprite.vert", fragmentPath = "src/shaders/sprite.frag"},
 	)
 
-	simplex.renderer = graphics.make_renderer_2D(spriteShader)
+	texture := graphics.load_texture(&simplex.asset_registry, {path = "sprites/grass_tile_1.png"})
+
+	simplex.renderer = graphics.make_renderer_2D(spriteShader, texture)
 }
 
 start :: proc(simplex: ^Simplex) {
@@ -49,10 +51,10 @@ start :: proc(simplex: ^Simplex) {
 
 		graphics.sumbit_command(
 			&simplex.renderer,
-			{transform = {position = {0, 0, 0}, size = {0.5, 1, 0}}},
+			{transform = {position = {0, 0, 0}, size = {100, 100, 0}}},
 		)
 		graphics.clear_color(simplex.options.backgroundColor)
-		graphics.render(&simplex.renderer, &simplex.asset_registry)
+		graphics.render(&simplex.renderer, &simplex.asset_registry, view.view__window_size)
 		view.update(simplex.window)
 	}
 }
