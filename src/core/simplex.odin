@@ -1,10 +1,10 @@
 package simplex
 
-import "../assets"
-import "../graphics"
-import "../input"
-import "../view"
-import "../vmath"
+import "simplex:assets"
+import "simplex:graphics"
+import "simplex:input"
+import "simplex:view"
+import "simplex:vmath"
 
 Simplex_Options :: struct {
 	windowOptions:   view.Window_Options,

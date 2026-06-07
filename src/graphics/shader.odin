@@ -1,6 +1,6 @@
 package graphics
 
-import "../assets"
+import "simplex:assets"
 import "core:fmt"
 import gl "vendor:OpenGL"
 

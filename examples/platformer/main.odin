@@ -1,7 +1,6 @@
 package example_simplex
 
-import core "../src/core/"
-
+import "simplex:core"
 
 main :: proc() {
 

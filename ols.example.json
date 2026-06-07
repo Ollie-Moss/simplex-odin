@@ -1,0 +1,8 @@
+{
+    "collections": [
+        {
+            "name": "simplex",
+            "path": "/path/to/simplex-odin/src/"
+        }
+    ]
+}

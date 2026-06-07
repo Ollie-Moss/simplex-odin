@@ -1,6 +1,6 @@
 package graphics
 
-import "../vmath"
+import "simplex:vmath"
 import gl "vendor:OpenGL"
 
 VAO :: u32

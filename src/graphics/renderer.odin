@@ -1,7 +1,7 @@
 package graphics
 
-import "../assets"
-import "../vmath/"
+import "simplex:assets"
+import "simplex:vmath/"
 import "core:math/linalg"
 
 BatchRenderer2D :: struct {

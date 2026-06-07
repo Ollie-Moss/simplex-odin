@@ -1,6 +1,6 @@
 package graphics
 
-import "../assets"
+import "simplex:assets"
 import "core:strings"
 import gl "vendor:OpenGL"
 import stb_image "vendor:stb/image"

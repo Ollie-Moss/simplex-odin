@@ -1,7 +1,7 @@
 package view
 
-import "../input"
-import "../vmath"
+import "simplex:input"
+import "simplex:vmath"
 import "base:runtime"
 import "core:fmt"
 import "core:strings"

@@ -1,7 +1,5 @@
 package assets
 
-import "core:container/handle_map"
-import "core:fmt"
 Asset_Handle :: distinct u32 // index into the asset list data
 
 Asset_List :: struct {
