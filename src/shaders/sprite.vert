@@ -8,7 +8,6 @@ layout(location = 3) in vec4 inColor; // per-instance
 layout(location = 4) in vec2 inTexPosition; // per-instance
 layout(location = 5) in vec2 inTexSize; // per-instance
 
-
 out vec2 texPos;
 out vec4 color;
 
@@ -16,10 +15,8 @@ uniform mat4 projection;
 
 void main() {
     vec2 position = (inVertexPos * inQuadSize) + inQuadPosition;
-    vec2 texPosition = (inVertexPos * inTexSize) + inTexPosition;
 
-    gl_Position = vec4(position, 1.0, 1.0);
-    // gl_Position = projection * vec4(position, 1.0, 1.0);
-    texPos = texPosition;
+    gl_Position = projection * vec4(position, 1.0, 1.0);
+    texPos = inVertexPos;
     color = inColor;
 }
