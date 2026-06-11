@@ -1,6 +1,7 @@
 package simplex
 
 import "simplex:assets"
+import "simplex:ecs"
 import "simplex:graphics"
 import "simplex:input"
 import "simplex:view"
@@ -16,6 +17,7 @@ Simplex :: struct {
 	options:        Simplex_Options,
 	asset_registry: assets.Asset_Registry,
 	renderer:       graphics.BatchRenderer2D,
+	registry:       ecs.Registry,
 }
 
 make_simplex :: proc(options: Simplex_Options) -> Simplex {
@@ -30,6 +32,7 @@ destroy_simplex :: proc(simplex: ^Simplex) {
 init :: proc(simplex: ^Simplex) {
 	view.init()
 	simplex.window = view.create_window(simplex.options.windowOptions)
+	simplex.registry = ecs.make_registry()
 	graphics.init()
 
 
@@ -46,13 +49,20 @@ init :: proc(simplex: ^Simplex) {
 }
 
 start :: proc(simplex: ^Simplex) {
+
+	entity := ecs.create_entity(&simplex.registry)
+	ecs.emplace_component(
+		&simplex.registry,
+		entity,
+		vmath.Transform{position = {300, 300, 0}, size = {100, 100, 100}},
+	)
+
 	for !view.should_quit(simplex.window) {
 		input.update()
 
-		graphics.sumbit_command(
-			&simplex.renderer,
-			{transform = {position = {0, 0, 0}, size = {100, 100, 0}}},
-		)
+		transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
+
+		graphics.sumbit_command(&simplex.renderer, {transform = transform^})
 		graphics.clear_color(simplex.options.backgroundColor)
 		graphics.render(&simplex.renderer, &simplex.asset_registry, view.view__window_size)
 		view.update(simplex.window)

@@ -59,8 +59,8 @@ render :: proc(
 	projection := linalg.matrix_ortho3d(
 		0,
 		f32(window_size.x),
-		f32(window_size.y),
 		0,
+		f32(window_size.y),
 		nearZClip,
 		farZClip,
 	)
@@ -70,4 +70,6 @@ render :: proc(
 	bind_texture(texture)
 	update_instance_data(&renderer.batch_mesh, renderer.buffer[:])
 	draw_instanced(&renderer.batch_mesh, 1)
+
+    clear(&renderer.buffer)
 }
