@@ -1,8 +1,8 @@
 package graphics
 
+import "core:math/linalg"
 import "simplex:assets"
 import "simplex:vmath/"
-import "core:math/linalg"
 
 BatchRenderer2D :: struct {
 	batch_mesh: Instanced_Mesh,
@@ -69,7 +69,7 @@ render :: proc(
 
 	bind_texture(texture)
 	update_instance_data(&renderer.batch_mesh, renderer.buffer[:])
-	draw_instanced(&renderer.batch_mesh, 1)
+	draw_instanced(&renderer.batch_mesh, i32(len(&renderer.buffer)))
 
-    clear(&renderer.buffer)
+	clear(&renderer.buffer)
 }

@@ -1,5 +1,6 @@
 package simplex
 
+import "core:fmt"
 import "simplex:assets"
 import "simplex:ecs"
 import "simplex:graphics"
@@ -48,25 +49,36 @@ init :: proc(simplex: ^Simplex) {
 	simplex.renderer = graphics.make_renderer_2D(spriteShader, texture)
 }
 
+physics_system :: proc(simplex: ^Simplex, entity: ecs.Entity) {
+	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
+	transform.position.y -= 0.05
+}
+
+render_system :: proc(simplex: ^Simplex, entity: ecs.Entity) {
+	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
+	graphics.sumbit_command(&simplex.renderer, {transform = transform^})
+}
+
+
 start :: proc(simplex: ^Simplex) {
 
-	entity := ecs.create_entity(&simplex.registry)
-	ecs.emplace_component(
-		&simplex.registry,
-		entity,
-		vmath.Transform{position = {300, 300, 0}, size = {100, 100, 100}},
-	)
+	for i in 0 ..< 10 {
+		entity := ecs.create_entity(&simplex.registry)
+		ecs.emplace_component(
+			&simplex.registry,
+			entity,
+			vmath.Transform{position = {10 + f32(60 * i), 300, 0}, size = {50, 50, 0}},
+		)
+	}
+
+	physics_view := ecs.create_view(&simplex.registry, vmath.Transform)
+	render_view := ecs.create_view(&simplex.registry, vmath.Transform)
 
 	for !view.should_quit(simplex.window) {
 		input.update()
 
-		if ecs.valid_entity(&simplex.registry, entity) {
-			//ecs.destroy_entity(&simplex.registry, entity)
-		}
-
-		if transform, ok := ecs.try_get_component(&simplex.registry, entity, vmath.Transform); ok {
-			graphics.sumbit_command(&simplex.renderer, {transform = transform^})
-		}
+		ecs.iterate_view(&physics_view, simplex, physics_system)
+		ecs.iterate_view(&render_view, simplex, render_system)
 
 		graphics.clear_color(simplex.options.backgroundColor)
 		graphics.render(&simplex.renderer, &simplex.asset_registry, view.view__window_size)

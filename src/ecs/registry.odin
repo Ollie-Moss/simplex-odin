@@ -32,3 +32,14 @@ _get_component_set :: proc(registry: ^Registry, $T: typeid) -> ^Sparse_Set {
 
 	return cast(^Sparse_Set)component_set
 }
+
+_get_component_set_by_typeid :: proc(registry: ^Registry, T: typeid) -> ^Sparse_Set {
+	if T not_in registry.component_set_types {
+		panic("AHHHH NO COMPONENT TYPE REGISTERED")
+	}
+
+	index := registry.component_set_types[T]
+	component_set := registry.component_sets[index]
+
+	return cast(^Sparse_Set)component_set
+}

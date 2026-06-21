@@ -1,2 +1,47 @@
 # simplex-odin
 2D game library written in Odin
+
+# Feature Plan
+- [ ] Input
+    - [ ] Key states
+    - [ ] Key mapping/binding
+- [ ] Rendering
+    - [x] Quad batching
+    - [ ] Text rendering
+    - [ ] Ensure simplex API is graphics API agnostic as best as possible without knowing details
+- [ ] Assets
+    - [ ] Texture atlas generation
+- [ ] Entity Component System
+    - [x] Component Storage using sparse set
+    - [x] Paginated sparse set sparse arrays
+    - [x] Light-weight view implementation
+    - [ ] Entity generation id
+    - [ ] Testing *More important as complexity grows*
+- [ ] Event System
+    - [ ] Invesigate event system for ecs style game engine
+- [ ] Flex UI system 
+    *Translate layout engine from C++ simplex with new found knowledge and experience*
+    - [ ] Flex layout engine
+        - [ ] Sizing
+        - [ ] Positioning
+        - [ ] Text layout
+    - [ ] Reactive/dynamic elements/properties
+        - [ ] Minimal patching/re-renders
+    - [ ] Input/interactable elements
+        - [ ] Events - (bubbling, custom events, etc)
+        - [ ] Text input - (holding, modifier navigation, selection, etc, clicking)
+        - [ ] Dropdowns
+        - [ ] Checkboxes
+        - [ ] Buttons
+        - [ ] Scroll views
+    - [ ] High level components
+        - [ ] Menus/tabs
+        - [ ] Dialogs
+        - [ ] Toast notifications
+- [ ] Physics
+    - [ ] Dynamic BVH (Bounding Volume Hierarchy) 2D collision detection
+- [ ] Multi-threading
+    - [ ] Worker thread(s) for background tasks: asset loading, saving game data, etc
+    - [ ] UI thread
+    - [ ] Investigate the suitablitity for render thread
+    - [ ] Multi-threading ECS systems
