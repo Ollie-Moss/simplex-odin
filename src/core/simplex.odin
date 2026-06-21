@@ -1,6 +1,8 @@
 package simplex
 
+import "core:fmt"
 import "simplex:assets"
+import "simplex:ecs"
 import "simplex:graphics"
 import "simplex:input"
 import "simplex:view"
@@ -16,6 +18,7 @@ Simplex :: struct {
 	options:        Simplex_Options,
 	asset_registry: assets.Asset_Registry,
 	renderer:       graphics.BatchRenderer2D,
+	registry:       ecs.Registry,
 }
 
 make_simplex :: proc(options: Simplex_Options) -> Simplex {
@@ -30,6 +33,7 @@ destroy_simplex :: proc(simplex: ^Simplex) {
 init :: proc(simplex: ^Simplex) {
 	view.init()
 	simplex.window = view.create_window(simplex.options.windowOptions)
+	simplex.registry = ecs.make_registry()
 	graphics.init()
 
 
@@ -45,14 +49,37 @@ init :: proc(simplex: ^Simplex) {
 	simplex.renderer = graphics.make_renderer_2D(spriteShader, texture)
 }
 
+physics_system :: proc(simplex: ^Simplex, entity: ecs.Entity) {
+	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
+	transform.position.y -= 0.05
+}
+
+render_system :: proc(simplex: ^Simplex, entity: ecs.Entity) {
+	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
+	graphics.sumbit_command(&simplex.renderer, {transform = transform^})
+}
+
+
 start :: proc(simplex: ^Simplex) {
+
+	for i in 0 ..< 10 {
+		entity := ecs.create_entity(&simplex.registry)
+		ecs.emplace_component(
+			&simplex.registry,
+			entity,
+			vmath.Transform{position = {10 + f32(60 * i), 300, 0}, size = {50, 50, 0}},
+		)
+	}
+
+	physics_view := ecs.create_view(&simplex.registry, vmath.Transform)
+	render_view := ecs.create_view(&simplex.registry, vmath.Transform)
+
 	for !view.should_quit(simplex.window) {
 		input.update()
 
-		graphics.sumbit_command(
-			&simplex.renderer,
-			{transform = {position = {0, 0, 0}, size = {100, 100, 0}}},
-		)
+		ecs.iterate_view(&physics_view, simplex, physics_system)
+		ecs.iterate_view(&render_view, simplex, render_system)
+
 		graphics.clear_color(simplex.options.backgroundColor)
 		graphics.render(&simplex.renderer, &simplex.asset_registry, view.view__window_size)
 		view.update(simplex.window)
