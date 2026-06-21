@@ -60,9 +60,14 @@ start :: proc(simplex: ^Simplex) {
 	for !view.should_quit(simplex.window) {
 		input.update()
 
-		transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
+		if ecs.valid_entity(&simplex.registry, entity) {
+			//ecs.destroy_entity(&simplex.registry, entity)
+		}
 
-		graphics.sumbit_command(&simplex.renderer, {transform = transform^})
+		if transform, ok := ecs.try_get_component(&simplex.registry, entity, vmath.Transform); ok {
+			graphics.sumbit_command(&simplex.renderer, {transform = transform^})
+		}
+
 		graphics.clear_color(simplex.options.backgroundColor)
 		graphics.render(&simplex.renderer, &simplex.asset_registry, view.view__window_size)
 		view.update(simplex.window)
