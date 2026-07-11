@@ -1,10 +1,8 @@
 package simplex
 
-import "core:fmt"
 import "simplex:assets"
 import "simplex:ecs"
 import "simplex:graphics"
-import "simplex:input"
 import "simplex:view"
 import "simplex:vmath"
 
@@ -36,7 +34,6 @@ init :: proc(simplex: ^Simplex) {
 	simplex.registry = ecs.make_registry()
 	graphics.init()
 
-
 	simplex.asset_registry = assets.make_registry()
 
 	spriteShader := graphics.load_shader(
@@ -49,41 +46,8 @@ init :: proc(simplex: ^Simplex) {
 	simplex.renderer = graphics.make_renderer_2D(spriteShader, texture)
 }
 
-physics_system :: proc(simplex: ^Simplex, entity: ecs.Entity) {
-	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
-	transform.position.y -= 0.05
-}
-
-render_system :: proc(simplex: ^Simplex, entity: ecs.Entity) {
-	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
-	graphics.sumbit_command(&simplex.renderer, {transform = transform^})
-}
-
-
-start :: proc(simplex: ^Simplex) {
-
-	for i in 0 ..< 10 {
-		entity := ecs.create_entity(&simplex.registry)
-		ecs.emplace_component(
-			&simplex.registry,
-			entity,
-			vmath.Transform{position = {10 + f32(60 * i), 300, 0}, size = {50, 50, 0}},
-		)
-	}
-
-	physics_view := ecs.create_view(&simplex.registry, vmath.Transform)
-	render_view := ecs.create_view(&simplex.registry, vmath.Transform)
-
-	for !view.should_quit(simplex.window) {
-		input.update()
-
-		ecs.iterate_view(&physics_view, simplex, physics_system)
-		ecs.iterate_view(&render_view, simplex, render_system)
-
-		graphics.clear_color(simplex.options.backgroundColor)
-		graphics.render(&simplex.renderer, &simplex.asset_registry, view.view__window_size)
-		view.update(simplex.window)
-	}
+should_quit :: proc(simplex: ^Simplex) -> bool {
+	return view.should_quit(simplex.window)
 }
 
 shutdown :: proc(simplex: ^Simplex) {

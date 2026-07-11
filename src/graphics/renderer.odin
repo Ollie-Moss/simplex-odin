@@ -67,7 +67,8 @@ render :: proc(
 
 	shader_set_mat4(shader^, "projection", &projection)
 
-	bind_texture(texture)
+	//bind_texture(texture)
+
 	update_instance_data(&renderer.batch_mesh, renderer.buffer[:])
 	draw_instanced(&renderer.batch_mesh, i32(len(&renderer.buffer)))
 

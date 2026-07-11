@@ -11,5 +11,4 @@ vec4 :: [4]f32
 Transform :: struct {
 	position: vec3,
 	size:     vec3,
-	rotation: f32,
 }
