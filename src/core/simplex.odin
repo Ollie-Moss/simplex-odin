@@ -15,7 +15,7 @@ Simplex :: struct {
 	window:         view.Window,
 	options:        Simplex_Options,
 	asset_registry: assets.Asset_Registry,
-	renderer:       graphics.BatchRenderer2D,
+	renderer_2d:    graphics.BatchRenderer2D,
 	registry:       ecs.Registry,
 }
 
@@ -25,7 +25,7 @@ make_simplex :: proc(options: Simplex_Options) -> Simplex {
 
 destroy_simplex :: proc(simplex: ^Simplex) {
 	assets.destroy_registry(&simplex.asset_registry)
-	graphics.destroy_renderer_2d(&simplex.renderer)
+	graphics.destroy_renderer_2d(&simplex.renderer_2d)
 }
 
 init :: proc(simplex: ^Simplex) {
@@ -43,7 +43,7 @@ init :: proc(simplex: ^Simplex) {
 
 	texture := graphics.load_texture(&simplex.asset_registry, {path = "sprites/grass_tile_1.png"})
 
-	simplex.renderer = graphics.make_renderer_2D(spriteShader, texture)
+	simplex.renderer_2d = graphics.make_renderer_2D(spriteShader, texture)
 }
 
 should_quit :: proc(simplex: ^Simplex) -> bool {

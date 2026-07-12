@@ -11,13 +11,18 @@ Mesh :: struct {
 }
 
 Instanced_Mesh :: struct {
-	using mesh:   Mesh,
-	instance_vbo: VBO, // dynamic, rewritten each frame
+	using mesh:     Mesh,
+	instance_vbo:   VBO,
+	instance_count: i32,
 }
 
-create_instanced_mesh :: proc(instanced_vertices: []$T, baseMesh: Mesh) -> Instanced_Mesh {
+create_instanced_mesh :: proc(
+	instanced_vertices: []$T,
+	baseMesh: Mesh,
+	layout: Vertex_Layout,
+) -> Instanced_Mesh {
 	instance_vbo := create_vbo()
-	bind_vbo(baseMesh.vao, instance_vbo, layout_quad_2d)
+	bind_vbo(baseMesh.vao, instance_vbo, layout)
 	fill_vbo(instance_vbo, instanced_vertices)
 
 	return Instanced_Mesh{mesh = baseMesh, instance_vbo = instance_vbo}
@@ -30,11 +35,18 @@ destroy_instanced_mesh :: proc(instanced_mesh: ^Instanced_Mesh) {
 
 update_instance_data :: proc(mesh: ^Instanced_Mesh, data: []$T) {
 	fill_vbo(mesh.instance_vbo, data)
+	mesh.instance_count = i32(len(data))
 }
 
-draw_instanced :: proc(mesh: ^Instanced_Mesh, count: i32) {
+draw_instanced :: proc(mesh: ^Instanced_Mesh) {
 	gl.BindVertexArray(mesh.vao)
-	gl.DrawElementsInstanced(mesh.primitive, mesh.vertex_count, gl.UNSIGNED_INT, nil, count)
+	gl.DrawElementsInstanced(
+		mesh.primitive,
+		mesh.vertex_count,
+		gl.UNSIGNED_INT,
+		nil,
+		mesh.instance_count,
+	)
 	gl.BindVertexArray(0)
 }
 
@@ -42,7 +54,6 @@ create_mesh :: proc(
 	vertices: []$TVertex,
 	indices: []$TIndex,
 	primitive: u32,
-	vertex_count: i32,
 	layout: Vertex_Layout,
 ) -> Mesh {
 	vao := create_vao()
@@ -60,7 +71,7 @@ create_mesh :: proc(
 		vbo = vbo,
 		ebo = ebo,
 		primitive = primitive,
-		vertex_count = vertex_count,
+		vertex_count = i32(len(indices)),
 	}
 }
 
@@ -70,8 +81,10 @@ destroy_mesh :: proc(mesh: ^Mesh) {
 	destroy_ebo(&mesh.ebo)
 }
 
-update_data :: proc(mesh: ^Mesh, data: []$T) {
-	fill_vbo(mesh.vbo, data)
+update_data :: proc(mesh: ^Mesh, vertices: []$TVertex, indices: []$TIndex) {
+	fill_vbo(mesh.vbo, vertices)
+	fill_ebo(mesh.ebo, indices)
+	mesh.vertex_count = len(indices)
 }
 
 draw :: proc(mesh: ^Mesh) {
@@ -90,10 +103,90 @@ create_quad_mesh :: proc() -> Mesh {
 
 	indices: []u32 = {0, 1, 2, 0, 3, 2}
 
-	return create_mesh(vertices, indices, gl.TRIANGLES, 6, layout_vertex_2d)
+	return create_mesh(vertices, indices, gl.TRIANGLES, layout_vertex_2d)
 }
 
+create_cube_mesh :: proc() -> Mesh {
+	vertices: []Vertex_3D = {
+		// Front (+Z)
+		{{-0.5, -0.5, 0.5}, {0, 0, 1}, {0, 0}},
+		{{0.5, -0.5, 0.5}, {0, 0, 1}, {1, 0}},
+		{{0.5, 0.5, 0.5}, {0, 0, 1}, {1, 1}},
+		{{-0.5, 0.5, 0.5}, {0, 0, 1}, {0, 1}},
+
+		// Back (-Z)
+		{{0.5, -0.5, -0.5}, {0, 0, -1}, {0, 0}},
+		{{-0.5, -0.5, -0.5}, {0, 0, -1}, {1, 0}},
+		{{-0.5, 0.5, -0.5}, {0, 0, -1}, {1, 1}},
+		{{0.5, 0.5, -0.5}, {0, 0, -1}, {0, 1}},
+
+		// Left (-X)
+		{{-0.5, -0.5, -0.5}, {-1, 0, 0}, {0, 0}},
+		{{-0.5, -0.5, 0.5}, {-1, 0, 0}, {1, 0}},
+		{{-0.5, 0.5, 0.5}, {-1, 0, 0}, {1, 1}},
+		{{-0.5, 0.5, -0.5}, {-1, 0, 0}, {0, 1}},
+
+		// Right (+X)
+		{{0.5, -0.5, 0.5}, {1, 0, 0}, {0, 0}},
+		{{0.5, -0.5, -0.5}, {1, 0, 0}, {1, 0}},
+		{{0.5, 0.5, -0.5}, {1, 0, 0}, {1, 1}},
+		{{0.5, 0.5, 0.5}, {1, 0, 0}, {0, 1}},
+
+		// Top (+Y)
+		{{-0.5, 0.5, 0.5}, {0, 1, 0}, {0, 0}},
+		{{0.5, 0.5, 0.5}, {0, 1, 0}, {1, 0}},
+		{{0.5, 0.5, -0.5}, {0, 1, 0}, {1, 1}},
+		{{-0.5, 0.5, -0.5}, {0, 1, 0}, {0, 1}},
+
+		// Bottom (-Y)
+		{{-0.5, -0.5, -0.5}, {0, -1, 0}, {0, 0}},
+		{{0.5, -0.5, -0.5}, {0, -1, 0}, {1, 0}},
+		{{0.5, -0.5, 0.5}, {0, -1, 0}, {1, 1}},
+		{{-0.5, -0.5, 0.5}, {0, -1, 0}, {0, 1}},
+	}
+
+	indices: []u32 = {
+		0,
+		1,
+		2,
+		0,
+		2,
+		3, // Front
+		4,
+		5,
+		6,
+		4,
+		6,
+		7, // Back
+		8,
+		9,
+		10,
+		8,
+		10,
+		11, // Left
+		12,
+		13,
+		14,
+		12,
+		14,
+		15, // Right
+		16,
+		17,
+		18,
+		16,
+		18,
+		19, // Top
+		20,
+		21,
+		22,
+		20,
+		22,
+		23, // Bottom
+	}
+
+	return create_mesh(vertices, indices, gl.TRIANGLES, layout_vertex_3d)
+}
 
 create_instanced_quad_mesh :: proc() -> Instanced_Mesh {
-	return create_instanced_mesh([]Quad_Vertex_2D{}, create_quad_mesh())
+	return create_instanced_mesh([]Quad_Vertex_2D{}, create_quad_mesh(), layout_instance_quad_2d)
 }

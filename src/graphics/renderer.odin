@@ -70,7 +70,7 @@ render :: proc(
 	//bind_texture(texture)
 
 	update_instance_data(&renderer.batch_mesh, renderer.buffer[:])
-	draw_instanced(&renderer.batch_mesh, i32(len(&renderer.buffer)))
+	draw_instanced(&renderer.batch_mesh)
 
 	clear(&renderer.buffer)
 }

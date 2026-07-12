@@ -30,6 +30,12 @@ Vertex_2D :: struct {
 	position: vmath.vec2,
 }
 
+Vertex_3D :: struct {
+	position:         vmath.vec3,
+	normal:           vmath.vec3,
+	texture_position: vmath.vec2,
+}
+
 Quad_Vertex_2D :: struct {
 	position:         vmath.vec2,
 	size:             vmath.vec2,
@@ -53,7 +59,35 @@ layout_vertex_2d := Vertex_Layout {
 }
 
 @(rodata)
-layout_quad_2d := Vertex_Layout {
+layout_vertex_3d := Vertex_Layout {
+	stride     = size_of(Vertex_3D),
+	attributes = {
+		{
+			location = 0,
+			property_vector_size = 3,
+			type = .Float,
+			offset = offset_of(Vertex_3D, position),
+			divsor = 0,
+		},
+		{
+			location = 1,
+			property_vector_size = 3,
+			type = .Float,
+			offset = offset_of(Vertex_3D, normal),
+			divsor = 0,
+		},
+		{
+			location = 2,
+			property_vector_size = 2,
+			type = .Float,
+			offset = offset_of(Vertex_3D, texture_position),
+			divsor = 0,
+		},
+	},
+}
+
+@(rodata)
+layout_instance_quad_2d := Vertex_Layout {
 	stride     = size_of(Quad_Vertex_2D),
 	attributes = {
 		{

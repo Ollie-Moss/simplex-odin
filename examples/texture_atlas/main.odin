@@ -1,12 +1,12 @@
 package example_simplex
 
-import "simplex:input"
-import "simplex:view"
 import "core:fmt"
 import "core:math/rand"
 import "simplex:core"
 import "simplex:ecs"
 import "simplex:graphics"
+import "simplex:input"
+import "simplex:view"
 import "simplex:vmath"
 
 ColorComp :: struct {
@@ -21,7 +21,7 @@ physics_system :: proc(simplex: ^core.Simplex, entity: ecs.Entity) {
 render_system :: proc(simplex: ^core.Simplex, entity: ecs.Entity) {
 	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
 	color := ecs.get_component(&simplex.registry, entity, ColorComp)
-	graphics.sumbit_command(&simplex.renderer, {transform = transform^, color = color.color})
+	graphics.sumbit_command(&simplex.renderer_2d, {transform = transform^, color = color.color})
 }
 
 
@@ -101,7 +101,7 @@ main :: proc() {
 		ecs.iterate_view(&render_view, &simplex, render_system)
 
 		graphics.clear_color(simplex.options.backgroundColor)
-		graphics.render(&simplex.renderer, &simplex.asset_registry, view.view__window_size)
+		graphics.render(&simplex.renderer_2d, &simplex.asset_registry, view.view__window_size)
 		view.update(simplex.window)
 	}
 
