@@ -8,15 +8,10 @@ BatchRenderer2D :: struct {
 	batch_mesh: Instanced_Mesh,
 	buffer:     [dynamic]Quad_Vertex_2D,
 	shader:     Shader_Handle,
-	texture:    Texture_Handle,
 }
 
-make_renderer_2D :: proc(shader: Shader_Handle, texture: Texture_Handle) -> BatchRenderer2D {
-	return BatchRenderer2D {
-		shader = shader,
-		texture = texture,
-		batch_mesh = create_instanced_quad_mesh(),
-	}
+make_renderer_2D :: proc(shader: Shader_Handle) -> BatchRenderer2D {
+	return BatchRenderer2D{shader = shader, batch_mesh = create_instanced_quad_mesh()}
 }
 
 destroy_renderer_2d :: proc(renderer: ^BatchRenderer2D) {
@@ -43,31 +38,31 @@ submit_rect_command :: proc(renderer: ^BatchRenderer2D, cmd: Rect_Command) {
 	append(&renderer.buffer, vertex)
 }
 
-
 render :: proc(
 	renderer: ^BatchRenderer2D,
 	asset_registry: ^assets.Asset_Registry,
-	window_size: vmath.ivec2,
+	viewport_size: vmath.ivec2,
+	zoom: f32,
+	cam_position: vmath.ivec2,
 ) {
 	shader := assets.get_asset(asset_registry, Shader, renderer.shader)
-	texture := assets.get_asset(asset_registry, Texture, renderer.texture)
 	use_shader(shader^)
 
 	nearZClip: f32 = -100.0
 	farZClip: f32 = 100.0
 
+	halfWidth := f32(viewport_size.x) / zoom / 2.0
+	halfHeight := f32(viewport_size.y) / zoom / 2.0
 	projection := linalg.matrix_ortho3d(
-		0,
-		f32(window_size.x),
-		0,
-		f32(window_size.y),
+		f32(cam_position.x) - halfWidth,
+		f32(cam_position.x) + halfWidth,
+		f32(cam_position.y) - halfHeight,
+		f32(cam_position.y) + halfHeight,
 		nearZClip,
 		farZClip,
 	)
 
 	shader_set_mat4(shader^, "projection", &projection)
-
-	//bind_texture(texture)
 
 	update_instance_data(&renderer.batch_mesh, renderer.buffer[:])
 	draw_instanced(&renderer.batch_mesh)

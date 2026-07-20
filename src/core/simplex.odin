@@ -1,5 +1,6 @@
 package simplex
 
+import "simplex:input"
 import "simplex:assets"
 import "simplex:ecs"
 import "simplex:graphics"
@@ -31,19 +32,11 @@ destroy_simplex :: proc(simplex: ^Simplex) {
 init :: proc(simplex: ^Simplex) {
 	view.init()
 	simplex.window = view.create_window(simplex.options.windowOptions)
+	input.init(simplex.window.windowHandle)
 	simplex.registry = ecs.make_registry()
 	graphics.init()
 
 	simplex.asset_registry = assets.make_registry()
-
-	spriteShader := graphics.load_shader(
-		&simplex.asset_registry,
-		{vertexPath = "src/shaders/sprite.vert", fragmentPath = "src/shaders/sprite.frag"},
-	)
-
-	texture := graphics.load_texture(&simplex.asset_registry, {path = "sprites/grass_tile_1.png"})
-
-	simplex.renderer_2d = graphics.make_renderer_2D(spriteShader, texture)
 }
 
 should_quit :: proc(simplex: ^Simplex) -> bool {

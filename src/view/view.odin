@@ -1,10 +1,10 @@
 package view
 
-import "simplex:input"
-import "simplex:vmath"
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
+import "simplex:input"
+import "simplex:vmath"
 import "vendor:OpenGL"
 import "vendor:glfw"
 
@@ -60,8 +60,6 @@ create_window :: proc(options: Window_Options) -> Window {
 	if windowHandle == nil {
 		panic("EXIT_FAILURE")
 	}
-
-	glfw.SetKeyCallback(windowHandle, input.key_callback)
 
 	glfw.MakeContextCurrent(windowHandle)
 	glfw.SetFramebufferSizeCallback(windowHandle, framebuffer_size_callback)
