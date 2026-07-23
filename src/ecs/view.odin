@@ -36,14 +36,19 @@ iterate_view :: proc(view: ^View, call_back_context: $T, call_back: proc(ctx: T,
 
 	// get smallest componet set
 	smallest_component_set: ^Sparse_Set = nil
+	smallest_component_set_dense_len := max(int)
 	other_component_sets: [dynamic]^Sparse_Set
 
 	for type in view.types {
 		component_set := _get_component_set_by_typeid(view.registry, type)
+		component_set_dense_len := len(component_set.dense)
 
-		if len(component_set.dense) < len(smallest_component_set.dense) {
-			append(&other_component_sets, smallest_component_set)
+		if component_set_dense_len < smallest_component_set_dense_len {
+			if smallest_component_set != nil {
+				append(&other_component_sets, smallest_component_set)
+			}
 			smallest_component_set = component_set
+			smallest_component_set_dense_len = component_set_dense_len
 		} else {
 			append(&other_component_sets, component_set)
 		}

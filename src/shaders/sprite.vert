@@ -15,8 +15,9 @@ uniform mat4 projection;
 
 void main() {
     vec2 position = (inVertexPos * inQuadSize) + inQuadPosition;
+    vec2 uv = (inVertexPos * inTexSize) + inTexPosition;
 
     gl_Position = projection * vec4(position, 1.0, 1.0);
-    texPos = inVertexPos;
+    texPos = uv;
     color = inColor;
 }

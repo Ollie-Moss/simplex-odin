@@ -1,41 +1,53 @@
 package input
 
-import "base:runtime"
+import "simplex:input"
+import "simplex:vmath"
 import "vendor:glfw"
 
 key_callback :: proc "c" (window: glfw.WindowHandle, glfw_key, scancode, glfw_action, mods: i32) {
-	context = runtime.default_context()
-
 	key := Key(glfw_key)
-	key_state := KeyState(glfw_key)
+	key_state := KeyState(glfw_action)
 
 	if key == .Unknown {
 		return
 	}
 
-	if key_state == .Pressed || key_state == .Repeat {
-		current_state := &keys[Key(key)]
-		current_state^ =
-			.Held if current_state^ == .Pressed || current_state^ == .Repeat else key_state
-	} else if key_state == .Release {
-		delete_key(&keys, Key(key))
-	}
+	input_state.keys[key] = key_state
+}
+
+mouse_callback :: proc "c" (window: glfw.WindowHandle, glfw_button, glfw_action, mods: i32) {
+	mouse_button := MouseButton(glfw_button)
+	button_state := KeyState(glfw_action)
+	input_state.mouse_buttons[mouse_button] = button_state
 }
 
 scroll_callback :: proc "c" (window: glfw.WindowHandle, xoffset: f64, yoffset: f64) {
-	scroll_delta = f32(yoffset)
+	input_state.scroll_delta = f32(yoffset)
 }
 
 init :: proc(window: glfw.WindowHandle) {
+	input_state.keys = make(map[Key]KeyState)
+	glfw.SetMouseButtonCallback(window, mouse_callback)
 	glfw.SetKeyCallback(window, key_callback)
 	glfw.SetScrollCallback(window, scroll_callback)
 }
 
-KeyState :: enum {
+
+KeyState :: enum i32 {
 	Release = glfw.RELEASE,
-	Repeat = glfw.REPEAT,
+	Repeat  = glfw.REPEAT,
 	Pressed = glfw.PRESS,
-	Held,
+}
+
+MouseButton :: enum i32 {
+	Mouse1 = glfw.MOUSE_BUTTON_1,
+	Mouse2 = glfw.MOUSE_BUTTON_2,
+	Mouse3 = glfw.MOUSE_BUTTON_3,
+	Mouse4 = glfw.MOUSE_BUTTON_4,
+	Mouse5 = glfw.MOUSE_BUTTON_5,
+	Mouse6 = glfw.MOUSE_BUTTON_6,
+	Mouse7 = glfw.MOUSE_BUTTON_7,
+	Mouse8 = glfw.MOUSE_BUTTON_8,
 }
 
 Key :: enum i32 {
@@ -159,28 +171,68 @@ Key :: enum i32 {
 	Menu         = glfw.KEY_MENU,
 }
 
+InputState :: struct {
+	keys:              map[Key]KeyState,
+	mouse_buttons:     map[MouseButton]KeyState,
+	scroll_delta:      f32,
+	current_mouse_pos: vmath.vec2,
+	last_mouse_pos:    vmath.vec2,
+}
 
 @(private)
-keys: map[Key]KeyState
+input_state := InputState {
+	last_mouse_pos    = {0, 0},
+	current_mouse_pos = {0, 0},
+	scroll_delta      = 0,
+}
 
-@(private)
-scroll_delta: f32
+update :: proc(window: glfw.WindowHandle) {
+	input_state.scroll_delta = 0
 
-update :: proc() {
-	scroll_delta = 0
+	x, y := glfw.GetCursorPos(window)
+	_, height := glfw.GetWindowSize(window)
+	current_pos := vmath.vec2{f32(x), f32(height) - f32(y)}
+
+	input_state.last_mouse_pos = input_state.current_mouse_pos
+	input_state.current_mouse_pos = current_pos
+
 	glfw.PollEvents()
 }
 
-is_pressed :: proc(key: Key) -> bool {
-	state := keys[key]
+is_pressed :: proc {
+	is_pressed_key,
+	is_pressed_mouse,
+}
+
+is_held :: proc {
+	is_held_key,
+	is_held_mouse,
+}
+
+is_pressed_key :: proc(key: Key) -> bool {
+	state := input_state.keys[key]
 	return state == .Pressed || state == .Repeat
 }
 
-is_held :: proc(key: Key) -> bool {
-	state := keys[key]
-	return state == .Held
+is_held_key :: proc(key: Key) -> bool {
+	state := input_state.keys[key]
+	return state == .Pressed || state == .Repeat
+}
+
+is_pressed_mouse :: proc(mouseButton: MouseButton) -> bool {
+	state := input_state.mouse_buttons[mouseButton]
+	return state == .Pressed || state == .Repeat
+}
+
+is_held_mouse :: proc(mouseButton: MouseButton) -> bool {
+	state := input_state.mouse_buttons[mouseButton]
+	return state == .Pressed || state == .Repeat
 }
 
 get_scroll_delta :: proc() -> f32 {
-	return scroll_delta
+	return input_state.scroll_delta
+}
+
+get_mouse_delta :: proc() -> vmath.vec2 {
+	return input_state.last_mouse_pos - input_state.current_mouse_pos
 }

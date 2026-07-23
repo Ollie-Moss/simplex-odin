@@ -21,9 +21,10 @@ destroy_renderer_2d :: proc(renderer: ^BatchRenderer2D) {
 Rect_Command :: struct {
 	transform: vmath.Transform,
 	color:     vmath.vec4,
+	flip_tex:  bool,
 }
 
-sumbit_command :: proc {
+submit_command :: proc {
 	submit_rect_command,
 }
 
@@ -33,7 +34,11 @@ submit_rect_command :: proc(renderer: ^BatchRenderer2D, cmd: Rect_Command) {
 		size             = cmd.transform.size.xy,
 		color            = cmd.color,
 		texture_position = cmd.transform.position.xy,
-		texture_size     = cmd.transform.size.xy,
+		texture_size     = {1, 1},
+	}
+
+	if cmd.flip_tex {
+		vertex.texture_size = {1, -1}
 	}
 	append(&renderer.buffer, vertex)
 }
@@ -43,7 +48,8 @@ render :: proc(
 	asset_registry: ^assets.Asset_Registry,
 	viewport_size: vmath.ivec2,
 	zoom: f32,
-	cam_position: vmath.ivec2,
+	cam_position: vmath.vec2,
+	font: ^Font,
 ) {
 	shader := assets.get_asset(asset_registry, Shader, renderer.shader)
 	use_shader(shader^)
@@ -65,6 +71,7 @@ render :: proc(
 	shader_set_mat4(shader^, "projection", &projection)
 
 	update_instance_data(&renderer.batch_mesh, renderer.buffer[:])
+	bind_texture(assets.get_asset(asset_registry, Texture, font.texture))
 	draw_instanced(&renderer.batch_mesh)
 
 	clear(&renderer.buffer)

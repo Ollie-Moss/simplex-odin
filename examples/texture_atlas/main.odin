@@ -21,7 +21,7 @@ physics_system :: proc(simplex: ^core.Simplex, entity: ecs.Entity) {
 render_system :: proc(simplex: ^core.Simplex, entity: ecs.Entity) {
 	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
 	color := ecs.get_component(&simplex.registry, entity, ColorComp)
-	graphics.sumbit_command(&simplex.renderer_2d, {transform = transform^, color = color.color})
+	graphics.submit_command(&simplex.renderer_2d, {transform = transform^, color = color.color})
 }
 
 
