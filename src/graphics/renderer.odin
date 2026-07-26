@@ -1,7 +1,9 @@
 package graphics
 
+import "core:fmt"
 import "core:math/linalg"
 import "simplex:assets"
+import "simplex:graphics"
 import "simplex:vmath/"
 
 BatchRenderer2D :: struct {
@@ -23,9 +25,50 @@ Rect_Command :: struct {
 	color:     vmath.vec4,
 	flip_tex:  bool,
 }
+Text_Command :: struct {
+	position: vmath.vec2,
+	color:    vmath.vec4,
+	font:     ^Font,
+	text:     string,
+	size:     u16,
+}
 
 submit_command :: proc {
 	submit_rect_command,
+	submit_text_command,
+}
+
+submit_text_command :: proc(renderer: ^BatchRenderer2D, cmd: Text_Command) {
+	position := cmd.position.xy
+	for code_point, i in cmd.text {
+		char, scale := get_character(cmd.font, code_point, cmd.size)
+
+		descent := f32(char.texture_size.y - char.y_bearing) * scale
+		vertex := Quad_Vertex_2D {
+			position         = {position.x, position.y - descent},
+			size             = vmath.vec2(char.texture_size) * scale,
+			color            = cmd.color,
+			texture_position = vmath.vec2(char.texture_offset) / cmd.font.atlas_size,
+			texture_size     = vmath.vec2(char.texture_size) / cmd.font.atlas_size,
+		}
+
+		// flip y
+		vertex.texture_position.y += vertex.texture_size.y
+		vertex.texture_size.y *= -1
+
+		append(&renderer.buffer, vertex)
+
+		if i < len(cmd.text) - 1 {
+			next_code_point := rune(cmd.text[i + 1])
+			if kern_advance, exists :=
+				   cmd.font.kern_lookup[get_kern_pair(code_point, next_code_point)]; exists {
+				position.x += f32(kern_advance) * char.scale * scale
+				continue
+			}
+		}
+
+		position.x += f32(char.advance) * char.scale * scale
+	}
 }
 
 submit_rect_command :: proc(renderer: ^BatchRenderer2D, cmd: Rect_Command) {

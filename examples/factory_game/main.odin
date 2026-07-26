@@ -1,5 +1,6 @@
 package example_simplex
 
+import "core:fmt"
 import "simplex:assets"
 import "simplex:core"
 import "simplex:ecs"
@@ -11,7 +12,10 @@ import "simplex:vmath"
 render_system :: proc(simplex: ^core.Simplex, entity: ecs.Entity) {
 	transform := ecs.get_component(&simplex.registry, entity, vmath.Transform)
 	mesh := ecs.get_component(&simplex.registry, entity, Renderable)
-	graphics.submit_command(&simplex.renderer_2d, {transform = transform^, flip_tex = true})
+	graphics.submit_command(
+		&simplex.renderer_2d,
+		graphics.Rect_Command{transform = transform^, flip_tex = true},
+	)
 }
 
 cam_system :: proc(simplex: ^core.Simplex, entity: ecs.Entity) {
@@ -57,7 +61,7 @@ main :: proc() {
 	ecs.emplace_component(
 		&simplex.registry,
 		entity,
-		vmath.Transform{position = {0, 0, 0}, size = {32, 32, 0}},
+		vmath.Transform{position = {64, 64, 0}, size = {32, 32, 0}},
 	)
 	ecs.emplace_component(&simplex.registry, entity, Renderable{color = {1, 0, 0, 1}})
 
@@ -71,7 +75,7 @@ main :: proc() {
 		&simplex.registry,
 		camera_entity,
 		Camera {
-			zoom = 100,
+			zoom = 1,
 			viewport_size = vmath.vec2({1920, 1080}),
 			smoothing_speed = 10.0,
 			deadzone = {{1, 1}, {1, 1}},
@@ -80,11 +84,32 @@ main :: proc() {
 	)
 
 	render_view := ecs.create_view(&simplex.registry, Renderable, vmath.Transform)
+	font_ptr := assets.get_asset(&simplex.asset_registry, graphics.Font, font)
 
 	for !core.should_quit(&simplex) {
 		input.update(simplex.window.windowHandle)
 
 		ecs.iterate_view(&render_view, &simplex, render_system)
+		graphics.submit_command(
+			&simplex.renderer_2d,
+			graphics.Text_Command {
+				position = {0, 0},
+				font = font_ptr,
+				text = "Hello World",
+				color = {1, 1, 1, 1},
+				size = 16,
+			},
+		)
+		graphics.submit_command(
+			&simplex.renderer_2d,
+			graphics.Text_Command {
+				position = {0, 100},
+				font = font_ptr,
+				text = "Hello World",
+				color = {1, 1, 1, 1},
+				size = 256,
+			},
+		)
 
 		cam := ecs.get_component(&simplex.registry, camera_entity, Camera)
 		cam_trans := ecs.get_component(&simplex.registry, camera_entity, vmath.Transform)
@@ -102,7 +127,7 @@ main :: proc() {
 			vmath.ivec2(cam.viewport_size),
 			cam.zoom,
 			cam_trans.position.xy,
-			assets.get_asset(&simplex.asset_registry, graphics.Font, font),
+			font_ptr,
 		)
 		view.update(simplex.window)
 	}
