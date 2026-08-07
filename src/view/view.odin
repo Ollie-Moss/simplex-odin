@@ -63,6 +63,7 @@ create_window :: proc(options: Window_Options) -> Window {
 
 	glfw.MakeContextCurrent(windowHandle)
 	glfw.SetFramebufferSizeCallback(windowHandle, framebuffer_size_callback)
+	glfw.SwapInterval(0)
 
 	view__window_size = {options.windowSize.x, options.windowSize.y}
 	return Window{windowHandle = windowHandle}

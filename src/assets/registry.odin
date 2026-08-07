@@ -1,14 +1,15 @@
 package assets
 
 Asset_Handle :: distinct u32 // index into the asset list data
+NULL_ASSET :: max(Asset_Handle)
 
 Asset_List :: struct {
-	data:    [dynamic]any,
+	data:    [dynamic]rawptr,
 	destroy: proc(data: rawptr), // optional cleanup
 }
 
 make_asset_list :: proc($T: typeid, destroy: proc(_: rawptr) = nil) -> Asset_List {
-	return Asset_List{data = make([dynamic]any), destroy = destroy}
+	return Asset_List{data = make([dynamic]rawptr), destroy = destroy}
 }
 destroy_asset_list :: proc(list: Asset_List) {
 	delete(list.data)
@@ -29,12 +30,12 @@ make_registry :: proc() -> Asset_Registry {
 destroy_registry :: proc(registry: ^Asset_Registry) {
 	for &list in registry.asset_lists {
 		if list.destroy != nil {
-			for &item in list.data {
-				list.destroy(item.data) // item is `any`, .data is rawptr
+			for item in list.data {
+				list.destroy(item) // item is `any`, .data is rawptr
 			}
 		}
 		for item in list.data {
-			free(item.data)
+			free(item)
 		}
 		destroy_asset_list(list)
 	}
@@ -62,10 +63,17 @@ get_asset :: proc(registry: ^Asset_Registry, $T: typeid, handle: Asset_Handle) -
 	asset_list_index := registry.type_to_asset_list[T]
 	asset_list := &registry.asset_lists[asset_list_index]
 
-	asset := &asset_list.data[handle]
-	assert(asset.id == T, "Handle is associate with a different type than expected")
+	asset := asset_list.data[handle]
 
-	return cast(^T)asset.data
+	return cast(^T)asset
+}
+
+get_assets :: proc(registry: ^Asset_Registry, $T: typeid) -> []^T {
+	asset_list_index := registry.type_to_asset_list[T]
+	asset_list := &registry.asset_lists[asset_list_index]
+
+	multi_ptr := cast([^]^T)raw_data(asset_list.data)
+	return multi_ptr[:len(asset_list.data)]
 }
 
 insert_asset :: proc(registry: ^Asset_Registry, data: $T) -> Asset_Handle {
@@ -78,7 +86,7 @@ insert_asset :: proc(registry: ^Asset_Registry, data: $T) -> Asset_Handle {
 
 	ptr := new(T)
 	ptr^ = data
-	append(&asset_list.data, any{data = ptr, id = typeid_of(T)})
+	append(&asset_list.data, ptr)
 
 	return Asset_Handle(len(asset_list.data) - 1)
 }

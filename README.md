@@ -3,23 +3,23 @@
 
 # Feature Plan
 - [ ] Input
-    - [ ] Key states
+    - [x] Key states
     - [ ] Key mapping/binding
 - [ ] Rendering
     - [x] Quad batching
-    - [ ] Text rendering
+    - [x] Text rendering
     - [ ] Ensure simplex API is graphics API agnostic as best as possible without knowing details
 - [ ] Assets
     - [x] Shader
     - [x] Texture 
     - [ ] Texture atlas generation
-        - [ ] Max rects packing
+        - [x] Max rects packing
         - [ ] Pack into multiple files for `GL_TEXTURE_2D_ARRAY` usage
-        - [ ] Font loading
-            - [ ] `stb_truetype` loading 
-            - [ ] Multiple sizes
-            - [ ] Anti-alias for specific sizes,
-            - [ ] Basic kerning (might be more related to the flex layout engine)
+        - [x] Font loading
+            - [x] `stb_truetype` loading 
+            - [x] Multiple sizes
+            - [x] Anti-alias for specific sizes,
+            - [x] Basic kerning (might be more related to the flex layout engine)
 - [ ] Entity Component System
     - [x] Component Storage using sparse set
     - [x] Paginated sparse set sparse arrays

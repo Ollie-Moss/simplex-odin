@@ -3,7 +3,6 @@ package graphics
 import "core:fmt"
 import "core:mem"
 import "core:os"
-import "core:slice"
 import "simplex:assets"
 import "simplex:graphics"
 import "simplex:vmath"
@@ -12,7 +11,8 @@ import "vendor:stb/truetype"
 Font_Handle :: assets.Asset_Handle
 
 Font_Config :: struct {
-	path: string,
+	path:  string,
+	sizes: []u16,
 }
 
 Sized_Code_Point :: struct {
@@ -33,6 +33,7 @@ Font :: struct {
 	line_gap:         i32,
 	line_height:      f32,
 	atlas_size:       f32,
+	sizes:            []u16,
 }
 
 Character :: struct {
@@ -45,10 +46,6 @@ Character :: struct {
 	scale:          f32,
 }
 
-// @(private)
-// FONT_SIZES :: [12]f32{256, 128, 64, 48, 32, 24, 20, 18, 16, 14, 12, 10}
-@(private)
-FONT_SIZES :: [4]u16{256, 64, 32, 16}
 
 @(private)
 ENGLISH_CODE_POINTS :: [5][2]rune {
@@ -58,6 +55,22 @@ ENGLISH_CODE_POINTS :: [5][2]rune {
 	{0x2018, 0x201D}, // curly quotes
 	{0x2026, 0x2026}, // ellipsis
 }
+
+Font_Size :: enum {
+	Default,
+	Small,
+	Large,
+}
+
+@(private)
+DEFAULT_FONT_SIZES := [?]u16{196, 128, 64, 32, 16}
+
+@(private)
+LARGE_FONT_SIZES := [?]u16{256, 196, 128, 96, 72, 64}
+
+@(private)
+SMALL_FONT_SIZES := [?]u16{32, 28, 24, 16, 14, 12, 8, 6}
+
 
 get_character_id :: proc(code_point: rune, size: u16) -> Character_Id {
 	return u32(code_point) << 16 | u32(size)
@@ -74,43 +87,42 @@ get_character :: proc(
 	char: Character,
 	scale: f32,
 ) {
-	best_distance := max(u32)
-	size_to_use: u16 = 64
-	for size in FONT_SIZES {
-		distance := u32(size) - u32(target_size)
-		if distance >= 0 && distance <= best_distance {
+	k: f32 = 16
+	max_factor: f32 = 4
+	factor := clamp(1 + k / f32(target_size), 1.0, max_factor)
+	supersampled_size := f32(target_size) * factor
+
+	best_distance := max(f32)
+	size: u16 = 0
+	for s in font.sizes {
+		distance := abs(f32(s) - f32(supersampled_size))
+		if distance < best_distance {
 			best_distance = distance
-			size_to_use = size
+			size = s
+		}
+		if distance == best_distance && s > size {
+			size = s
 		}
 	}
-	filtered: [dynamic]u16
-	filtered.allocator = context.temp_allocator
-	reserve(&filtered, len(FONT_SIZES))
 
-	// Manual filtering loop
-	for size in FONT_SIZES {
-		if size > size_to_use {
-			append(&filtered, size)
-		}
-	}
-	if len(filtered) > 0 {
-		min, _ := slice.min_index(filtered[:])
-		size_to_use = filtered[min]
-	}
-
-
-	i, exists := font.character_lookup[get_character_id(code_point, size_to_use)]
-	if !exists {
+	if size == 0 {
+		fmt.println(font.sizes)
 		panic(
+			fmt.tprint("Could not find size for target size: ", target_size, " factor: ", factor),
+		)
+	}
+
+	i :=
+		font.character_lookup[get_character_id(code_point, size)] or_else panic(
 			fmt.tprint(
 				"Could not find character for provided code_point and size: ",
 				code_point,
 				", ",
-				size_to_use,
+				size,
 			),
 		)
-	}
-	return font.characters[i], f32(target_size) / f32(size_to_use)}
+	return font.characters[i], f32(target_size) / f32(size)
+}
 
 load_font :: proc(registry: ^assets.Asset_Registry, config: Font_Config) -> Font_Handle {
 
@@ -121,12 +133,12 @@ load_font :: proc(registry: ^assets.Asset_Registry, config: Font_Config) -> Font
 		panic(fmt.tprintf("Ahhh font did not load: %s", config.path))
 	}
 
-	max_texture_size: i32 = 4096
+	max_texture_size: i32 = 2048
 
 	font := Font {
 		atlas_size = f32(max_texture_size),
+		sizes      = config.sizes if len(config.sizes) > 0 else DEFAULT_FONT_SIZES[:],
 	}
-
 	truetype.GetFontVMetrics(&font_info, &font.ascent, &font.descent, &font.line_gap)
 
 
@@ -146,7 +158,7 @@ load_font :: proc(registry: ^assets.Asset_Registry, config: Font_Config) -> Font
 			glyph_index := truetype.FindGlyphIndex(&font_info, code_point)
 			truetype.GetGlyphHMetrics(&font_info, glyph_index, &char.advance, &char.left_bearing)
 
-			for size in FONT_SIZES {
+			for size in font.sizes {
 				scale := truetype.ScaleForPixelHeight(&font_info, f32(size))
 
 				ix0, ix1, iy0, iy1: i32
@@ -180,7 +192,7 @@ load_font :: proc(registry: ^assets.Asset_Registry, config: Font_Config) -> Font
 	reserve(&free_rects, len(font.characters) * 4)
 	append(&free_rects, vmath.Rect{size = {max_texture_size, max_texture_size}})
 
-	padding: i32 = 10
+	padding: i32 = 2
 
 	for &char in font.characters {
 		rect := vmath.Rect {

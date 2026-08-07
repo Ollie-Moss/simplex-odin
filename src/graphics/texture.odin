@@ -133,3 +133,7 @@ bind_texture :: proc(texture: ^Texture) {
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, texture.handle)
 }
+clear_texture :: proc() {
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, 0)
+}

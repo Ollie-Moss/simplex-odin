@@ -38,6 +38,11 @@ update_instance_data :: proc(mesh: ^Instanced_Mesh, data: []$T) {
 	mesh.instance_count = i32(len(data))
 }
 
+update_instance_data_len :: proc(mesh: ^Instanced_Mesh, data: []$T, len: int) {
+	fill_vbo(mesh.instance_vbo, data)
+	mesh.instance_count = i32(len)
+}
+
 draw_instanced :: proc(mesh: ^Instanced_Mesh) {
 	gl.BindVertexArray(mesh.vao)
 	gl.DrawElementsInstanced(
