@@ -1,8 +1,10 @@
 package graphics
 
+import "core:math"
+import "core:slice"
 import "simplex:assets"
 import "simplex:graphics"
-import "simplex:vmath/"
+import "simplex:vmath"
 
 BatchRenderer2D :: struct {
 	batch_mesh: Instanced_Mesh,
@@ -83,9 +85,9 @@ submit_text_command :: proc(renderer: ^BatchRenderer2D, cmd: Text_Command) {
 	}
 }
 
-submit_rect_command :: proc(renderer: ^BatchRenderer2D, cmd: Rect_Command) {
+submit_rect_command :: proc(renderer: ^BatchRenderer2D, cmd: ^Rect_Command) {
 	vertex := Quad_Vertex_2D {
-		position         = cmd.transform.position.xyz,
+		position         = cmd.transform.position,
 		size             = cmd.transform.size.xy,
 		color            = cmd.color,
 		texture_position = cmd.transform.position.xy,

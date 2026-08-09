@@ -9,6 +9,7 @@ init :: proc() {
 	}
 	gl.load_up_to(4, 6, set_proc_address)
 
+
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }

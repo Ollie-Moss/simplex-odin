@@ -1,9 +1,9 @@
 package example_simplex
 
 import "core:fmt"
+import "core:math/rand"
 import "core:os"
 import "core:strings"
-import "core:text/regex/virtual_machine"
 import "simplex:assets"
 import "simplex:core"
 import "simplex:ecs"
@@ -24,6 +24,7 @@ main :: proc() {
 		},
 	)
 	core.init(&simplex)
+
 	font := graphics.load_font(&simplex.asset_registry, {path = "fonts/arial.ttf"})
 
 	spriteShader := graphics.load_shader(
@@ -47,13 +48,13 @@ main :: proc() {
 		camera_entity,
 		Camera {
 			zoom = 1,
-			viewport_size = vmath.vec2({1920, 1080}),
+			viewport_size = vmath.vec2({2560, 1440}),
 			smoothing_speed = 10.0,
 			deadzone = {{1, 1}, {1, 1}},
 		},
 	)
 
-	render_view := ecs.create_view(&simplex.registry, Renderable, vmath.Transform)
+	render_view := ecs.create_view2(&simplex.registry, vmath.Transform, Renderable)
 	font_ptr := assets.get_asset(&simplex.asset_registry, graphics.Font, font)
 	stats := make_engine_stats()
 
@@ -88,14 +89,15 @@ main :: proc() {
 
 	handle := graphics.load_texture(&simplex.asset_registry, {path = "images/Stone.png"})
 	texture := assets.get_asset(&simplex.asset_registry, graphics.Texture, handle)
+	rand.reset(123456)
 	for i in 0 ..< 100_000 {
 		tex_entity := ecs.create_entity(&simplex.registry)
 		ecs.emplace_component(
 			&simplex.registry,
 			tex_entity,
 			vmath.Transform {
-				position = {500, 500, 0},
-				size = {f32(texture.width), f32(texture.height), 0},
+				position = {rand.float32_range(0, 2560), rand.float32_range(0, 1440), 0},
+				size = {f32(16), f32(16), 0},
 			},
 		)
 		ecs.emplace_component(
@@ -111,10 +113,11 @@ main :: proc() {
 
 		input.update(simplex.window.windowHandle)
 
-		ecs.iterate_view(&render_view, &simplex, render_system)
+		ecs.iterate_view2(&render_view, &simplex, render_system)
 
 		fps_str := fmt.tprintf("%.0f", stats.fps)
 		fps_display := fmt.tprintf("FPS: |%s|", strings.center_justify(fps_str, 20, " "))
+		view.update_title(&simplex.window, fps_str)
 
 		graphics.submit_command(
 			&simplex.renderer_2d,

@@ -3,7 +3,6 @@ package view
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
-import "simplex:input"
 import "simplex:vmath"
 import "vendor:OpenGL"
 import "vendor:glfw"
@@ -27,6 +26,10 @@ Window :: struct {
 Window_Options :: struct {
 	windowSize: vmath.ivec2,
 	title:      string,
+}
+
+update_title :: proc(window: ^Window, title: string) {
+	glfw.SetWindowTitle(window.windowHandle, strings.clone_to_cstring(title))
 }
 
 update :: proc(window: Window) {

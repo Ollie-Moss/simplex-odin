@@ -12,7 +12,8 @@ void main() {
         vec4 mixed = mix(texColor, color, color.a);
         mixed.a = texColor.a;
         FragColor = mixed;
-    } else {
+    } 
+    else {
         FragColor = texColor;
     }
 }

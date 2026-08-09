@@ -1,22 +1,57 @@
 package ecs
 
 import "core:slice"
+
 View :: struct {
 	registry: ^Registry,
-	types:    [dynamic]typeid,
+	types:    []typeid,
+}
+
+View2 :: struct($A: typeid, $B: typeid) {
+	registry: ^Registry,
+	set_a:    ^Sparse_Set,
+	set_b:    ^Sparse_Set,
+}
+
+create_view2 :: proc(registry: ^Registry, $A: typeid, $B: typeid) -> View2(A, B) {
+	return View2(A, B){registry = registry}
 }
 
 create_view :: proc(registry: ^Registry, types: ..typeid) -> View {
-	view := View{}
+	return View{registry = registry, types = slice.clone(types)}
+}
 
-	view.registry = registry
-	view.types = slice.clone_to_dynamic(types)
+iterate_view2 :: proc(
+	view: ^View2($A, $B),
+	call_back_context: $T,
+	call_back: proc(ctx: T, e: Entity, a: ^A, b: ^B),
+) {
+	// get smallest componet set
+	if view.set_a == nil {
+		view.set_a = _get_component_set_by_typeid(view.registry, A)
+	}
 
-	return view
+	if view.set_b == nil {
+		view.set_b = _get_component_set_by_typeid(view.registry, B)
+	}
+
+	// iterate component set dense (desnse stroes indexes into sparse)
+
+	a_data := cast(^[dynamic]A)view.set_a.data
+	for &a, i in a_data {
+		entity := view.set_a.dense[i]
+		//_run_call_back_on_entity2(entity, view.set_b, call_back_context, call_back, &a)
+		b, ok := sparse_set_try_get(view.set_b, entity, B)
+		if !ok {
+			continue
+		}
+
+		// otherwise run the call_back on the entity
+		call_back(call_back_context, Entity(entity), &a, b)
+	}
 }
 
 iterate_view :: proc(view: ^View, call_back_context: $T, call_back: proc(ctx: T, e: Entity)) {
-
 	// if only one type
 	if len(view.types) <= 0 {
 		return
