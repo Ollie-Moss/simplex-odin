@@ -1,5 +1,6 @@
 package input
 
+import "core:fmt"
 import "simplex:input"
 import "simplex:vmath"
 import "vendor:glfw"
@@ -233,6 +234,12 @@ get_scroll_delta :: proc() -> f32 {
 	return input_state.scroll_delta
 }
 
+get_mouse_pos :: proc() -> vmath.vec2 {
+	return input_state.current_mouse_pos
+}
+get_last_mouse_pos :: proc() -> vmath.vec2 {
+	return input_state.last_mouse_pos
+}
 get_mouse_delta :: proc() -> vmath.vec2 {
 	return input_state.last_mouse_pos - input_state.current_mouse_pos
 }

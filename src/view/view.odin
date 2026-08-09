@@ -31,6 +31,10 @@ Window_Options :: struct {
 update_title :: proc(window: ^Window, title: string) {
 	glfw.SetWindowTitle(window.windowHandle, strings.clone_to_cstring(title))
 }
+get_window_size :: proc(window: ^Window) -> vmath.ivec2 {
+	w, h := glfw.GetWindowSize(window.windowHandle)
+	return {w, h}
+}
 
 update :: proc(window: Window) {
 	glfw.SwapBuffers(window.windowHandle)

@@ -56,7 +56,7 @@ cam_system :: proc(simplex: ^core.Simplex, entity: ecs.Entity) {
 
 Camera :: struct {
 	zoom:            f32,
-	viewport_size:   vmath.vec2,
+	viewport_size:   vmath.ivec2,
 	smoothing_speed: f32,
 	deadzone:        [2]vmath.vec2,
 }

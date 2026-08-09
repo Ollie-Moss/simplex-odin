@@ -48,13 +48,13 @@ main :: proc() {
 		camera_entity,
 		Camera {
 			zoom = 1,
-			viewport_size = vmath.vec2({2560, 1440}),
+			viewport_size = vmath.ivec2({2560, 1440}),
 			smoothing_speed = 10.0,
 			deadzone = {{1, 1}, {1, 1}},
 		},
 	)
 
-	render_view := ecs.create_view2(&simplex.registry, vmath.Transform, Renderable)
+	render_view := ecs.create_view(&simplex.registry, vmath.Transform, Renderable)
 	font_ptr := assets.get_asset(&simplex.asset_registry, graphics.Font, font)
 	stats := make_engine_stats()
 
@@ -63,6 +63,7 @@ main :: proc() {
 		panic("aahhhh no images")
 	}
 
+	create_100k_entities(&simplex)
 	// for file in files {
 	// 	// skip nested dirs for now
 	// 	if file.type == .Directory {
@@ -87,37 +88,15 @@ main :: proc() {
 	// 	)
 	// }
 
-	handle := graphics.load_texture(&simplex.asset_registry, {path = "images/Stone.png"})
-	texture := assets.get_asset(&simplex.asset_registry, graphics.Texture, handle)
-	rand.reset(123456)
-	for i in 0 ..< 100_000 {
-		tex_entity := ecs.create_entity(&simplex.registry)
-		ecs.emplace_component(
-			&simplex.registry,
-			tex_entity,
-			vmath.Transform {
-				position = {rand.float32_range(0, 2560), rand.float32_range(0, 1440), 0},
-				size = {f32(16), f32(16), 0},
-			},
-		)
-		ecs.emplace_component(
-			&simplex.registry,
-			tex_entity,
-			Renderable{texture = handle, color = {1, 0, 0, 1}},
-		)
-
-	}
-
 	for !core.should_quit(&simplex) {
 		calculate_fps(&stats, 0.04)
 
 		input.update(simplex.window.windowHandle)
 
-		ecs.iterate_view2(&render_view, &simplex, render_system)
+		ecs.iterate_view(&render_view, &simplex, render_system)
 
 		fps_str := fmt.tprintf("%.0f", stats.fps)
 		fps_display := fmt.tprintf("FPS: |%s|", strings.center_justify(fps_str, 20, " "))
-		view.update_title(&simplex.window, fps_str)
 
 		graphics.submit_command(
 			&simplex.renderer_2d,
@@ -142,10 +121,13 @@ main :: proc() {
 
 		cam := ecs.get_component(&simplex.registry, camera_entity, Camera)
 		cam_trans := ecs.get_component(&simplex.registry, camera_entity, vmath.Transform)
+		cam.viewport_size = view.get_window_size(&simplex.window)
 
 		cam.zoom = cam.zoom + (input.get_scroll_delta() * (0.5 * cam.zoom / 10.0))
 		if (input.is_held(input.MouseButton.Mouse3)) {
-			cam_delta := (input.get_mouse_delta() * {1, -1} / cam.zoom)
+			cam_delta := (input.get_mouse_delta() / cam.zoom)
+			cam_delta.y *= -1
+
 			cam_trans.position = cam_trans.position + vmath.vec3{cam_delta.x, cam_delta.y, 0}
 		}
 
