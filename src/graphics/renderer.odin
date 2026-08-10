@@ -1,7 +1,5 @@
 package graphics
 
-import "core:math"
-import "core:slice"
 import "simplex:assets"
 import "simplex:graphics"
 import "simplex:vmath"

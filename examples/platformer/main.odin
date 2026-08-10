@@ -1,7 +1,6 @@
 package example_simplex
 
 import "core:fmt"
-import "core:math/rand"
 import "core:os"
 import "core:strings"
 import "simplex:assets"
@@ -17,12 +16,12 @@ PlayerController :: struct {
 }
 
 main :: proc() {
-	simplex := core.make_simplex(
-		{
-			windowOptions = {windowSize = {1920, 1080}, title = "Simplex"},
-			backgroundColor = {0.173, 0.169, 0.180, 1.00},
-		},
-	)
+	opts := core.Simplex_Options {
+		windowOptions = {windowSize = {1920, 1080}, title = "Simplex"},
+		backgroundColor = {0.173, 0.169, 0.180, 1.00},
+	}
+
+	simplex := core.make_simplex(opts)
 	core.init(&simplex)
 
 	font := graphics.load_font(&simplex.asset_registry, {path = "fonts/arial.ttf"})
@@ -32,7 +31,7 @@ main :: proc() {
 		{vertexPath = "src/shaders/sprite.vert", fragmentPath = "src/shaders/sprite.frag"},
 	)
 
-	simplex.renderer_2d = graphics.make_renderer_2D(spriteShader)
+	renderer := graphics.make_renderer_2D(spriteShader)
 
 	entity := ecs.create_entity(&simplex.registry)
 	ecs.emplace_component(&simplex.registry, entity, Renderable{color = {1, 0, 0, 1}})
@@ -48,7 +47,7 @@ main :: proc() {
 		camera_entity,
 		Camera {
 			zoom = 1,
-			viewport_size = vmath.ivec2({2560, 1440}),
+			viewport_size = vmath.ivec2(opts.windowOptions.windowSize),
 			smoothing_speed = 10.0,
 			deadzone = {{1, 1}, {1, 1}},
 		},
@@ -63,7 +62,6 @@ main :: proc() {
 		panic("aahhhh no images")
 	}
 
-	create_100k_entities(&simplex)
 	// for file in files {
 	// 	// skip nested dirs for now
 	// 	if file.type == .Directory {
@@ -88,18 +86,20 @@ main :: proc() {
 	// 	)
 	// }
 
+	ui_renderer := graphics.make_renderer_2D(spriteShader)
+
 	for !core.should_quit(&simplex) {
 		calculate_fps(&stats, 0.04)
 
 		input.update(simplex.window.windowHandle)
 
-		ecs.iterate_view(&render_view, &simplex, render_system)
+		ecs.iterate_view(&render_view, &renderer, render_system)
 
 		fps_str := fmt.tprintf("%.0f", stats.fps)
 		fps_display := fmt.tprintf("FPS: |%s|", strings.center_justify(fps_str, 20, " "))
 
 		graphics.submit_command(
-			&simplex.renderer_2d,
+			&ui_renderer,
 			graphics.Text_Command {
 				position = {0, 0},
 				font = font_ptr,
@@ -108,16 +108,16 @@ main :: proc() {
 				size = 16,
 			},
 		)
-		graphics.submit_command(
-			&simplex.renderer_2d,
-			graphics.Text_Command {
-				position = {0, 100},
-				font = font_ptr,
-				text = "Hello World",
-				color = {1, 1, 1, 1},
-				size = 256,
-			},
-		)
+		// graphics.submit_command(
+		// 	&renderer2d,
+		// 	graphics.Text_Command {
+		// 		position = {0, 100},
+		// 		font = font_ptr,
+		// 		text = "Hello World",
+		// 		color = {1, 1, 1, 1},
+		// 		size = 256,
+		// 	},
+		// )
 
 		cam := ecs.get_component(&simplex.registry, camera_entity, Camera)
 		cam_trans := ecs.get_component(&simplex.registry, camera_entity, vmath.Transform)
@@ -133,10 +133,14 @@ main :: proc() {
 
 		graphics.clear_color(simplex.options.backgroundColor)
 		graphics.render(
-			&simplex.renderer_2d,
+			&renderer,
 			&simplex.asset_registry,
-			calculate_camera_projection_right_side_up(cam_trans, cam),
-			//assets.get_asset(&simplex.asset_registry, graphics.Texture, font_ptr.texture),
+			calculate_camera_projection(cam_trans, cam),
+		)
+		graphics.render(
+			&ui_renderer,
+			&simplex.asset_registry,
+			calculate_projection(vmath.vec2(view.get_window_size(&simplex.window))),
 		)
 		view.update(simplex.window)
 

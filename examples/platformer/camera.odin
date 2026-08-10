@@ -22,13 +22,13 @@ calculate_camera_projection_right_side_up :: proc(
 	farZClip: f32 = 100.0
 	cam_position := transform.position
 
-	halfWidth := f32(cam.viewport_size.x) / cam.zoom / 2.0
-	halfHeight := f32(cam.viewport_size.y) / cam.zoom / 2.0
+	halfWidth := f32(cam.viewport_size.x) / cam.zoom
+	halfHeight := f32(cam.viewport_size.y) / cam.zoom
 	return linalg.matrix_ortho3d(
-		f32(cam_position.x) - halfWidth,
+		f32(cam_position.x),
 		f32(cam_position.x) + halfWidth,
 		f32(cam_position.y) + halfHeight,
-		f32(cam_position.y) - halfHeight,
+		f32(cam_position.y),
 		nearZClip,
 		farZClip,
 	)

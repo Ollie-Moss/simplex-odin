@@ -1,12 +1,11 @@
 package example_simplex
 
-import "simplex:core"
 import "simplex:ecs"
 import "simplex:graphics"
 import "simplex:vmath"
 
 render_system :: proc(
-	simplex: ^core.Simplex,
+	renderer: ^graphics.BatchRenderer2D,
 	entity: ecs.Entity,
 	transform: ^vmath.Transform,
 	renderable: ^Renderable,
@@ -16,7 +15,7 @@ render_system :: proc(
 		transform = transform^,
 		flip_tex  = true,
 	}
-	graphics.submit_command(&simplex.renderer_2d, &cmd)
+	graphics.submit_command(renderer, &cmd)
 }
 
 Renderable :: struct {
