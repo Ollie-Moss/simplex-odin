@@ -3,24 +3,54 @@ package ui
 
 import "simplex:vmath"
 
-layout :: proc(root: ^Node, surface_size: vmath.vec2) {
+parent_flagged :: proc(node: ^Node) -> bool {
+	cur := node.parent
+	for cur != nil && !(.Layout_Root in cur.dirty) {cur = cur.parent}
+	if cur == nil do return false
+	return true
+}
+
+layout :: proc(tree: ^Tree, surface_size: vmath.vec2) {
+	if (tree.root.width_mode == .Grow || tree.root.height_mode == .Grow) &&
+	   surface_size != {tree.root.retained_width, tree.root.retained_height} {
+		layout_subtree(tree.root, surface_size)
+		return
+	}
+	for root in tree.layout_roots {
+		if parent_flagged(root) do continue
+		prev := vmath.vec2{root.retained_width, root.retained_height}
+		layout_subtree(root, surface_size)
+		after := vmath.vec2{root.retained_width, root.retained_height}
+
+		// grow mode tends to be a layout boundary but sometimes it isnt
+		// as seen here. So sometimes we do a double layout but most of the time
+		// its worth
+		if prev != after && speculative_boundary(root) && root.parent != nil {
+			layout_subtree(root.parent, surface_size)
+		}
+	}
+	for root in tree.layout_roots {root.dirty -= {.Layout_Root}}
+	clear(&tree.layout_roots)
+}
+
+layout_subtree :: proc(node: ^Node, surface_size: vmath.vec2) {
 	// Hug width
-	hug_pass(root, .Width)
+	hug_pass(node, .Width)
 
 	// Grow width
-	grow_pass(root, surface_size, .Width)
+	grow_pass(node, surface_size, .Width)
 
 	// Wrap text
 
 	// Hug height
-	hug_pass(root, .Height)
+	hug_pass(node, .Height)
 
 	// Grow height
-	grow_pass(root, surface_size, .Height)
+	grow_pass(node, surface_size, .Height)
 
 	// Postitions
-	position_pass(root, .Width)
-	position_pass(root, .Height)
+	position_pass(node, .Width)
+	position_pass(node, .Height)
 }
 
 get_size_mode :: proc(n: ^Node, a: Axis) -> SizeMode {
@@ -77,7 +107,7 @@ hug_pass :: proc(node: ^Node, axis: Axis) {
 }
 
 hug_axis :: proc(node: ^Node, axis: Axis) {
-	if (node.width_mode != .Hug) {
+	if (node.width_mode != .Hug && node.width_mode != .Grow) {
 		return
 	}
 
@@ -97,7 +127,11 @@ hug_axis :: proc(node: ^Node, axis: Axis) {
 
 grow_pass :: proc(node: ^Node, surface_size: vmath.vec2, axis: Axis) {
 	if get_size_mode(node, axis) == .Grow {
-		set_retained(node, axis, get_len_for_axis_vec2(surface_size, axis))
+		target_len := get_len_for_axis_vec2(surface_size, axis)
+		if node.parent != nil {
+			target_len = get_retained(node.parent, axis)^
+		}
+		set_retained(node, axis, target_len)
 	}
 	breadth_first(node, grow_axis, axis)
 }
@@ -135,6 +169,7 @@ grow_axis :: proc(node: ^Node, axis: Axis) {
 		return
 	}
 
+	// TODO: Make this grow smallest first so each child ends up the same size
 	per_child_len := available_length / f32(len(growable_children))
 	for child in growable_children {
 		target_retained: f32 = get_retained(child, axis)^ + per_child_len

@@ -1,7 +1,13 @@
 package ui
 
+import "core:fmt"
 import "core:hash/xxhash"
 import "core:mem"
+import "simplex:vmath"
+
+hex :: proc(hex: i32) -> vmath.vec4 {
+	return {f32(hex | 0xFF0000), f32(hex | 0x00FF00), f32(hex | 0x0000FF), 255}
+}
 
 pixels :: proc(amount: f32) -> Length {
 	return {.Pixels, amount}
@@ -18,12 +24,15 @@ Child :: union {
 
 kids :: proc(children: ..Child) -> [dynamic]Element {
 	elements := make([dynamic]Element, context.temp_allocator)
-	for child in children {
-		switch typed_child in child {
+	for &child, slot_index in children {
+		switch &typed_child in child {
 		case Element:
+			typed_child.slot = slot_index
 			append(&elements, typed_child)
 		case []Element:
-			for elem in typed_child {
+			for &elem, sub_index in typed_child {
+				elem.slot = slot_index
+				elem.sub = sub_index
 				append(&elements, elem)
 			}
 		}
@@ -53,6 +62,24 @@ element :: proc(style: Style, children: ..Child) -> Element {
 	return {style = style, children = kids(..children)}
 }
 
+column :: proc(style: Style, children: ..Child) -> Element {
+	elem := Element {
+		style    = style,
+		children = kids(..children),
+	}
+	elem.style.layout_direction = .Vertical
+	return elem
+}
+
+row :: proc(style: Style, children: ..Child) -> Element {
+	elem := Element {
+		style    = style,
+		children = kids(..children),
+	}
+	elem.style.layout_direction = .Horizontal
+	return elem
+}
+
 label :: proc(text: string, style: Style = {}, children: ..Child) -> Element {
 	return {style = style, children = kids(..children)}
 }
@@ -68,6 +95,7 @@ test_ui :: proc() -> Element {
 reconcile :: proc(tree: ^Tree, element: Element) {
 	if tree.root == nil {
 		tree.root = create_node(tree, ROOT_ID, element)
+		mark_dirty(tree, tree.root)
 	} else {
 		update_node(tree, tree.root, element)
 	}
@@ -75,11 +103,13 @@ reconcile :: proc(tree: ^Tree, element: Element) {
 
 create_node :: proc(tree: ^Tree, id: ID, element: Element) -> ^Node {
 	node := new(Node, tree.allocator)
+	node.id = id
 	node.style = element.style
 	node.children = make([dynamic]^Node, tree.allocator)
 
-	for &child_element, i in element.children {
-		child_node := create_node(tree, child_id(id, &child_element), child_element)
+	for &child_element in element.children {
+		child_node := create_node(tree, child_id(node.id, &child_element), child_element)
+		child_node.parent = node
 		append(&node.children, child_node)
 	}
 
@@ -89,7 +119,7 @@ create_node :: proc(tree: ^Tree, id: ID, element: Element) -> ^Node {
 update_node :: proc(tree: ^Tree, node: ^Node, element: Element) {
 	if node.layout != element.style.layout {
 		node.layout = element.style.layout
-		// layout dirty
+		mark_dirty(tree, node)
 	}
 
 	if node.paint != element.style.paint {
@@ -118,8 +148,6 @@ update_node :: proc(tree: ^Tree, node: ^Node, element: Element) {
 			append(&next, created_node)
 			structure_changed = true
 		}
-
-		if node.children[index].id != id {structure_changed = true}
 	}
 
 	// delete
@@ -130,7 +158,25 @@ update_node :: proc(tree: ^Tree, node: ^Node, element: Element) {
 	if structure_changed {
 		clear(&node.children)
 		append(&node.children, ..next[:])
-		// this is dirty
+		mark_dirty(tree, node)
+	}
+}
+
+layout_boundary :: proc(node: ^Node) -> bool {
+	return node.parent == nil || (node.width_mode == .Fixed || node.height_mode == .Fixed)
+}
+
+speculative_boundary :: proc(node: ^Node) -> bool {
+	return node.parent == nil || (node.width_mode == .Grow || node.height_mode == .Grow)
+}
+
+mark_dirty :: proc(tree: ^Tree, node: ^Node) {
+	cur := node
+	for !layout_boundary(cur) {cur = cur.parent}
+
+	if .Layout_Root not_in cur.dirty {
+		cur.dirty += {.Layout_Root}
+		append(&tree.layout_roots, cur)
 	}
 }
 
@@ -155,7 +201,6 @@ make_tree :: proc(allocator := context.allocator) -> ^Tree {
 }
 
 delete_tree :: proc(tree: ^Tree) {
-	delete_subtree(tree, tree.root)
-	delete(tree.layout_roots)
+	free_all(tree.allocator)
 	free(tree)
 }

@@ -94,17 +94,26 @@ main :: proc() {
 
 	for !core.should_quit(&simplex) {
 
-		ui_view := ui.element(
-			{width_mode = .Grow, color = {0, 0, 0, 255}, gap = 12, padding = {10, 10, 10, 10}},
-			ui.element({width_mode = .Grow, color = {255, 0, 0, 255}}),
-			ui.element({width_mode = .Grow, color = {0, 255, 0, 255}}),
-			ui.element({width_mode = .Grow, color = {0, 0, 255, 255}}),
+		ui_view := ui.column(
+			{
+				width_mode = .Grow,
+				height_mode = .Grow,
+				color = {1, 1, 0, 1},
+				padding = {10, 10, 10, 10},
+				gap = 12,
+			},
+			ui.row(
+			{width_mode = .Grow, height_mode = .Grow, color = {1, 0, 1, 1}}, // header
+			),
+			ui.element(
+			{width_mode = .Grow, color = {1, 1, 1, 1}}, // content
+			),
 		)
 
 		surface_size := vmath.vec2(view.get_window_size(&simplex.window))
 
 		ui.reconcile(tree, ui_view)
-		ui.layout(tree.root, surface_size)
+		ui.layout(tree, surface_size)
 		cmds := ui.render(tree.root)
 		defer delete(cmds)
 		for &cmd in cmds {
@@ -128,7 +137,7 @@ main :: proc() {
 				position = {0, 0},
 				font = font_ptr,
 				text = fps_display,
-				color = {1, 1, 1, 1},
+				color = {0, 0, 0, 1},
 				size = 16,
 			},
 		)

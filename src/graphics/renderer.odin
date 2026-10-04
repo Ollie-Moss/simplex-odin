@@ -20,7 +20,7 @@ make_renderer_2D :: proc(shader: Shader_Handle) -> BatchRenderer2D {
 	return BatchRenderer2D {
 		shader = shader,
 		batch_mesh = create_instanced_quad_mesh(),
-		buffer = make([dynamic]Quad_Vertex_2D, 100_000),
+		buffer = make([dynamic]Quad_Vertex_2D),
 	}
 }
 

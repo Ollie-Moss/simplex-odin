@@ -126,7 +126,7 @@ get_character :: proc(
 
 load_font :: proc(registry: ^assets.Asset_Registry, config: Font_Config) -> Font_Handle {
 
-	data, _ := os.read_entire_file(config.path, context.allocator)
+	data, _ := os.read_entire_file(config.path, context.temp_allocator)
 	font_info: truetype.fontinfo
 
 	if (!truetype.InitFont(&font_info, raw_data(data), 0)) {
