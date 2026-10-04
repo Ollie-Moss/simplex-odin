@@ -1,6 +1,7 @@
 #+feature dynamic-literals
 package ui
 
+import "core:mem"
 import "simplex:vmath"
 
 // main :: proc() {
@@ -12,6 +13,9 @@ import "simplex:vmath"
 // 		cmds := render(&retained_root)
 // 	}
 // }
+
+ID :: distinct u64
+ROOT_ID :: ID(0x726f6f74)
 
 Axis :: enum {
 	Width,
@@ -70,25 +74,56 @@ CrossAlign :: enum {
 	End,
 }
 
-Node_Desc :: struct {}
+Paint_Style :: struct {
+	color: vmath.vec4,
+}
 
-Node :: struct {
+Layout_Style :: struct {
 	width:            Length,
 	width_mode:       SizeMode,
 	height:           Length,
 	height_mode:      SizeMode,
 	main_align:       MainAlign,
 	cross_align:      CrossAlign,
-	color:            vmath.vec4,
 	padding:          Edges,
 	margin:           Edges,
 	gap:              f32,
 	layout_direction: Direction,
+}
 
-	// RETAINED DATA
-	dirty:            bool,
-	retained_width:   f32,
-	retained_height:  f32,
-	position:         vmath.vec2,
-	children:         [dynamic]Node,
+Style :: struct {
+	using layout: Layout_Style,
+	using paint:  Paint_Style,
+}
+
+Default_Style :: Style{}
+
+Node :: struct {
+	id:              ID,
+	using style:     Style,
+	retained_width:  f32,
+	retained_height: f32,
+	position:        vmath.vec2,
+	parent:          ^Node,
+	children:        [dynamic]^Node,
+	dirty:           bit_set[Dirty_Flag],
+}
+
+Element :: struct {
+	style:     Style,
+	// on_click:  Callback,
+	key:       u64,
+	has_key:   bool,
+	slot, sub: int, // identity info, filled in by kids()
+	children:  [dynamic]Element,
+}
+
+Tree :: struct {
+	root:         ^Node,
+	allocator:    mem.Allocator,
+	layout_roots: [dynamic]^Node,
+}
+
+Dirty_Flag :: enum {
+	Layout_Root,
 }

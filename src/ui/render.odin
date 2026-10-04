@@ -4,7 +4,7 @@ package ui
 import "simplex:vmath"
 
 render :: proc(root: ^Node) -> [dynamic]Rect_Command {
-	commands := make([dynamic]Rect_Command)
+	commands := make([dynamic]Rect_Command, context.temp_allocator)
 	breadth_first(root, render_node, &commands)
 	return commands
 }

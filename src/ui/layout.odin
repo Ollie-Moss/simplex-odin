@@ -104,9 +104,9 @@ grow_pass :: proc(node: ^Node, surface_size: vmath.vec2, axis: Axis) {
 
 grow_axis :: proc(node: ^Node, axis: Axis) {
 	growable_children := make([dynamic]^Node, context.temp_allocator)
-	for &child in node.children {
-		if get_size_mode(&child, axis) == .Grow {
-			append(&growable_children, &child)
+	for child in node.children {
+		if get_size_mode(child, axis) == .Grow {
+			append(&growable_children, child)
 		}
 	}
 
@@ -117,7 +117,7 @@ grow_axis :: proc(node: ^Node, axis: Axis) {
 	available_length: f32 = get_retained(node, axis)^ - get_padding(node, axis)
 
 	if !is_main_axis(node, axis) {
-		for &child in growable_children {
+		for child in growable_children {
 			set_retained(child, axis, available_length)
 		}
 		return
@@ -125,9 +125,9 @@ grow_axis :: proc(node: ^Node, axis: Axis) {
 
 	available_length -= max(0, f32(len(node.children)) - 1) * node.gap
 
-	for &child in node.children {
-		if get_size_mode(&child, axis) == .Hug || get_size_mode(&child, axis) == .Fixed {
-			available_length -= get_retained(&child, axis)^
+	for child in node.children {
+		if get_size_mode(child, axis) == .Hug || get_size_mode(child, axis) == .Fixed {
+			available_length -= get_retained(child, axis)^
 		}
 	}
 
@@ -136,7 +136,7 @@ grow_axis :: proc(node: ^Node, axis: Axis) {
 	}
 
 	per_child_len := available_length / f32(len(growable_children))
-	for &child in growable_children {
+	for child in growable_children {
 		target_retained: f32 = get_retained(child, axis)^ + per_child_len
 		set_retained(child, axis, target_retained)
 	}
@@ -158,9 +158,9 @@ position_main_align :: proc(node: ^Node, axis: Axis) {
 	switch node.main_align {
 	case .Start:
 		pos := get_content_start(node, axis)
-		for &child in node.children {
-			set_position(&child, axis, pos)
-			pos += get_retained(&child, axis)^
+		for child in node.children {
+			set_position(child, axis, pos)
+			pos += get_retained(child, axis)^
 			pos += node.gap
 		}
 	case .Center:
@@ -168,9 +168,9 @@ position_main_align :: proc(node: ^Node, axis: Axis) {
 		available_length -= max(0, f32(len(node.children)) - 1) * node.gap
 
 		pos := get_content_start(node, axis) + available_length / 2
-		for &child in node.children {
-			set_position(&child, axis, pos)
-			pos += get_retained(&child, axis)^
+		for child in node.children {
+			set_position(child, axis, pos)
+			pos += get_retained(child, axis)^
 			pos += node.gap
 		}
 	case .End:
@@ -178,9 +178,9 @@ position_main_align :: proc(node: ^Node, axis: Axis) {
 		available_length -= max(0, f32(len(node.children)) - 1) * node.gap
 
 		pos := get_content_start(node, axis) + available_length
-		for &child in node.children {
-			set_position(&child, axis, pos)
-			pos += get_retained(&child, axis)^
+		for child in node.children {
+			set_position(child, axis, pos)
+			pos += get_retained(child, axis)^
 			pos += node.gap
 		}
 	case .SpaceBetween:
@@ -191,15 +191,15 @@ position_main_align :: proc(node: ^Node, axis: Axis) {
 		pos := get_content_start(node, axis)
 		last_index := len(node.children) - 1
 
-		for &child, i in node.children {
+		for child, i in node.children {
 			// last child needs the gap placed before it
 			if i == last_index {
 				pos += between_gap
 			}
-			set_position(&child, axis, pos)
+			set_position(child, axis, pos)
 
 			pos += between_gap
-			pos += get_retained(&child, axis)^
+			pos += get_retained(child, axis)^
 		}
 	case .SpaceEvenly:
 		available_length: f32 = get_available(node, axis) - sum_children(node, axis)
@@ -207,28 +207,28 @@ position_main_align :: proc(node: ^Node, axis: Axis) {
 		even_gap := available_length / (max(0, f32(len(node.children)) - 1) + 2) // number of "gaps" + 2 for the start and end
 
 		pos := get_content_start(node, axis) + even_gap
-		for &child in node.children {
-			set_position(&child, axis, pos)
+		for child in node.children {
+			set_position(child, axis, pos)
 
 			pos += even_gap
-			pos += get_retained(&child, axis)^
+			pos += get_retained(child, axis)^
 		}
 	case .SpaceAround:
 		available_length: f32 = get_retained(node, axis)^ - get_padding(node, axis)
 
-		for &child in node.children {
-			available_length -= get_retained(&child, axis)^
+		for child in node.children {
+			available_length -= get_retained(child, axis)^
 		}
 
 		even_gap := available_length / (f32(len(node.children)) + 2)
 
 		pos := get_content_start(node, axis)
-		for &child in node.children {
+		for child in node.children {
 			pos += even_gap
-			set_position(&child, axis, pos)
+			set_position(child, axis, pos)
 
 			pos += even_gap
-			pos += get_retained(&child, axis)^
+			pos += get_retained(child, axis)^
 		}
 	}
 }
@@ -238,23 +238,23 @@ position_cross_align :: proc(node: ^Node, axis: Axis) {
 	pos := get_content_start(node, axis)
 	available := get_available(node, axis)
 
-	for &child in node.children {
+	for child in node.children {
 		offset: f32 = 0
 		#partial switch node.cross_align {
 		case .Start:
 		case .Center:
-			offset = (available - get_retained(&child, axis)^) / 2
+			offset = (available - get_retained(child, axis)^) / 2
 		case .End:
-			offset = available - get_retained(&child, axis)^
+			offset = available - get_retained(child, axis)^
 		}
-		set_position(&child, axis, pos + offset)
+		set_position(child, axis, pos + offset)
 	}
 }
 
 sum_children :: proc(node: ^Node, axis: Axis) -> f32 {
 	total: f32 = 0
-	for &child in node.children {
-		total += get_retained(&child, axis)^
+	for child in node.children {
+		total += get_retained(child, axis)^
 	}
 	return total
 }
@@ -262,8 +262,8 @@ sum_children :: proc(node: ^Node, axis: Axis) -> f32 {
 // returns 0 if no children
 get_largest_child :: proc(node: ^Node, axis: Axis) -> f32 {
 	largest: f32 = 0
-	for &child in node.children {
-		retained := get_retained(&child, axis)^
+	for child in node.children {
+		retained := get_retained(child, axis)^
 		if (retained > largest) {
 			largest = retained
 		}
@@ -279,22 +279,22 @@ breadth_first :: proc {
 
 breadth_first_no_args :: proc(node: ^Node, call_back: proc(node: ^Node)) {
 	call_back(node)
-	for &child in node.children {
-		breadth_first_no_args(&child, call_back)
+	for child in node.children {
+		breadth_first_no_args(child, call_back)
 	}
 }
 
 breadth_first_one_arg :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A), a: A) {
 	call_back(node, a)
-	for &child in node.children {
-		breadth_first_one_arg(&child, call_back, a)
+	for child in node.children {
+		breadth_first_one_arg(child, call_back, a)
 	}
 }
 
 breadth_first_one_arg_passed :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A) -> A, a: A) {
 	result := call_back(node, a)
-	for &child in node.children {
-		breadth_first_one_arg(&child, call_back, result)
+	for child in node.children {
+		breadth_first_one_arg(child, call_back, result)
 	}
 }
 
@@ -304,15 +304,15 @@ reverse_breadth_first :: proc {
 }
 
 reverse_breadth_first_no_args :: proc(node: ^Node, call_back: proc(node: ^Node)) {
-	for &child in node.children {
-		reverse_breadth_first_no_args(&child, call_back)
+	for child in node.children {
+		reverse_breadth_first_no_args(child, call_back)
 	}
 	call_back(node)
 }
 
 reverse_breadth_first_one_arg :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A), a: A) {
-	for &child in node.children {
-		reverse_breadth_first_one_arg(&child, call_back, a)
+	for child in node.children {
+		reverse_breadth_first_one_arg(child, call_back, a)
 	}
 	call_back(node, a)
 }

@@ -89,25 +89,23 @@ main :: proc() {
 	// }
 
 	ui_renderer := graphics.make_renderer_2D(spriteShader)
+	tree := ui.make_tree()
+	defer ui.delete_tree(tree)
 
 	for !core.should_quit(&simplex) {
 
-		root := ui.Node {
-			width_mode = .Grow,
-			color      = {0, 0, 0, 255},
-            gap = 12,
-            padding = {10, 10, 10, 10},
-			children   = [dynamic]ui.Node {
-				ui.Node{width_mode = .Grow, color = {255, 0, 0, 255}},
-				ui.Node{width_mode = .Grow, color = {0, 255, 0, 255}},
-				ui.Node{width_mode = .Grow, color = {0, 0, 255, 255}},
-			},
-		}
+		ui_view := ui.element(
+			{width_mode = .Grow, color = {0, 0, 0, 255}, gap = 12, padding = {10, 10, 10, 10}},
+			ui.element({width_mode = .Grow, color = {255, 0, 0, 255}}),
+			ui.element({width_mode = .Grow, color = {0, 255, 0, 255}}),
+			ui.element({width_mode = .Grow, color = {0, 0, 255, 255}}),
+		)
 
 		surface_size := vmath.vec2(view.get_window_size(&simplex.window))
 
-		ui.layout(&root, surface_size)
-		cmds := ui.render(&root)
+		ui.reconcile(tree, ui_view)
+		ui.layout(tree.root, surface_size)
+		cmds := ui.render(tree.root)
 		defer delete(cmds)
 		for &cmd in cmds {
 			submit_rect_command(&ui_renderer, &cmd)
@@ -119,7 +117,10 @@ main :: proc() {
 		ecs.iterate_view(&render_view, &renderer, render_system)
 
 		fps_str := fmt.tprintf("%.0f", stats.fps)
-		fps_display := fmt.tprintf("FPS: |%s|", strings.center_justify(fps_str, 20, " "))
+		fps_display := fmt.tprintf(
+			"FPS: |%s|",
+			strings.center_justify(fps_str, 20, " ", context.temp_allocator),
+		)
 
 		graphics.submit_command(
 			&ui_renderer,
