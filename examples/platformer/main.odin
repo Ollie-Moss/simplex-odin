@@ -1,3 +1,4 @@
+#+feature dynamic-literals
 package example_simplex
 
 import "core:fmt"
@@ -8,6 +9,7 @@ import "simplex:core"
 import "simplex:ecs"
 import "simplex:graphics"
 import "simplex:input"
+import "simplex:ui"
 import "simplex:view"
 import "simplex:vmath"
 
@@ -89,6 +91,27 @@ main :: proc() {
 	ui_renderer := graphics.make_renderer_2D(spriteShader)
 
 	for !core.should_quit(&simplex) {
+
+		root := ui.Node {
+			width_mode = .Grow,
+			color      = {0, 0, 0, 255},
+            gap = 12,
+            padding = {10, 10, 10, 10},
+			children   = [dynamic]ui.Node {
+				ui.Node{width_mode = .Grow, color = {255, 0, 0, 255}},
+				ui.Node{width_mode = .Grow, color = {0, 255, 0, 255}},
+				ui.Node{width_mode = .Grow, color = {0, 0, 255, 255}},
+			},
+		}
+
+		surface_size := vmath.vec2(view.get_window_size(&simplex.window))
+
+		ui.layout(&root, surface_size)
+		cmds := ui.render(&root)
+		defer delete(cmds)
+		for &cmd in cmds {
+			submit_rect_command(&ui_renderer, &cmd)
+		}
 		calculate_fps(&stats, 0.04)
 
 		input.update(simplex.window.windowHandle)
@@ -108,16 +131,6 @@ main :: proc() {
 				size = 16,
 			},
 		)
-		// graphics.submit_command(
-		// 	&renderer2d,
-		// 	graphics.Text_Command {
-		// 		position = {0, 100},
-		// 		font = font_ptr,
-		// 		text = "Hello World",
-		// 		color = {1, 1, 1, 1},
-		// 		size = 256,
-		// 	},
-		// )
 
 		cam := ecs.get_component(&simplex.registry, camera_entity, Camera)
 		cam_trans := ecs.get_component(&simplex.registry, camera_entity, vmath.Transform)
@@ -148,4 +161,17 @@ main :: proc() {
 	}
 
 	core.shutdown(&simplex)
+}
+
+submit_rect_command :: proc(renderer: ^graphics.BatchRenderer2D, cmd: ^ui.Rect_Command) {
+	vertex := graphics.Quad_Vertex_2D {
+		position         = {cmd.position.x, cmd.position.y, 0},
+		size             = cmd.size,
+		color            = cmd.color,
+		texture_position = cmd.position,
+		texture_size     = {1, 1},
+		texture          = assets.NULL_ASSET,
+	}
+
+	append(&renderer.buffer, vertex)
 }
