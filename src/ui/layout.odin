@@ -22,9 +22,9 @@ layout :: proc(tree: ^Tree, surface_size: vmath.vec2) {
 		layout_subtree(root, surface_size)
 		after := vmath.vec2{root.retained_width, root.retained_height}
 
-		// grow mode tends to be a layout boundary but sometimes it isnt
-		// as seen here. So sometimes we do a double layout but most of the time
-		// its worth
+		// grow mode is most likely a layout boundary but sometimes it isnt
+		// as seen here. So sometimes we do a double layout (or more if this happens more than once per roort)
+        // but most of the time this never happens so its worth
 		if prev != after && speculative_boundary(root) && root.parent != nil {
 			layout_subtree(root.parent, surface_size)
 		}
