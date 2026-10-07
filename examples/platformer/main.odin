@@ -93,32 +93,6 @@ main :: proc() {
 	defer ui.delete_tree(tree)
 
 	for !core.should_quit(&simplex) {
-
-		ui_view := ui.column(
-			{
-				width_mode = .Grow,
-				height_mode = .Grow,
-				color = {1, 1, 0, 1},
-				padding = {10, 10, 10, 10},
-				gap = 12,
-			},
-			ui.row(
-			{width_mode = .Grow, height_mode = .Grow, color = {1, 0, 1, 1}}, // header
-			),
-			ui.element(
-			{width_mode = .Grow, color = {1, 1, 1, 1}}, // content
-			),
-		)
-
-		surface_size := vmath.vec2(view.get_window_size(&simplex.window))
-
-		ui.reconcile(tree, ui_view)
-		ui.layout(tree, surface_size)
-		cmds := ui.render(tree.root)
-		defer delete(cmds)
-		for &cmd in cmds {
-			submit_rect_command(&ui_renderer, &cmd)
-		}
 		calculate_fps(&stats, 0.04)
 
 		input.update(simplex.window.windowHandle)
@@ -131,16 +105,40 @@ main :: proc() {
 			strings.center_justify(fps_str, 20, " ", context.temp_allocator),
 		)
 
-		graphics.submit_command(
-			&ui_renderer,
-			graphics.Text_Command {
-				position = {0, 0},
-				font = font_ptr,
-				text = fps_display,
-				color = {0, 0, 0, 1},
-				size = 16,
+		ui_view := ui.column(
+			ui.Style {
+				width_mode = .Grow,
+				height_mode = .Grow,
+				color = ui.hex(0x121211),
+				padding = {10, 10, 10, 10},
+				gap = 12,
 			},
+			ui.row(
+				ui.Style{width_mode = .Grow, height_mode = .Grow, color = ui.hex(0x262624)}, // header
+				ui.label(fps_display, {width_mode = .Grow, color = {0, 0, 0, 0}}),
+			),
+			ui.element(
+				ui.Style{width_mode = .Grow, color = ui.hex(0x262624)}, // content
+				ui.show(input.is_held_mouse(.Mouse1), ui.label("Mouse Held")),
+			),
 		)
+
+		surface_size := vmath.vec2(view.get_window_size(&simplex.window))
+
+		ui.reconcile(tree, ui_view)
+		ui.layout(tree, surface_size)
+		cmds := make([dynamic]ui.Render_Command, context.temp_allocator)
+		ui.render(tree.root, &cmds)
+
+		defer delete(cmds)
+		for &cmd in cmds {
+			switch &kind in cmd {
+			case ui.Rect_Command:
+				submit_ui_rect_command(&ui_renderer, &kind)
+			case ui.Text_Command:
+				submit_ui_text_command(&ui_renderer, &kind, font_ptr)
+			}
+		}
 
 		cam := ecs.get_component(&simplex.registry, camera_entity, Camera)
 		cam_trans := ecs.get_component(&simplex.registry, camera_entity, vmath.Transform)
@@ -173,7 +171,7 @@ main :: proc() {
 	core.shutdown(&simplex)
 }
 
-submit_rect_command :: proc(renderer: ^graphics.BatchRenderer2D, cmd: ^ui.Rect_Command) {
+submit_ui_rect_command :: proc(renderer: ^graphics.BatchRenderer2D, cmd: ^ui.Rect_Command) {
 	vertex := graphics.Quad_Vertex_2D {
 		position         = {cmd.position.x, cmd.position.y, 0},
 		size             = cmd.size,
@@ -184,4 +182,43 @@ submit_rect_command :: proc(renderer: ^graphics.BatchRenderer2D, cmd: ^ui.Rect_C
 	}
 
 	append(&renderer.buffer, vertex)
+}
+
+submit_ui_text_command :: proc(
+	renderer: ^graphics.BatchRenderer2D,
+	cmd: ^ui.Text_Command,
+	font: ^graphics.Font,
+) {
+	position := cmd.position.xy
+	for code_point, i in cmd.text {
+		char, scale := graphics.get_character(font, code_point, cmd.size)
+		offset := (f32(cmd.size) - f32(char.texture_size.y)) * scale
+
+		descent := f32(char.texture_size.y - char.y_bearing) * scale
+		vertex := graphics.Quad_Vertex_2D {
+			position         = {position.x, position.y + offset + descent, 0},
+			size             = vmath.vec2(char.texture_size) * scale,
+			color            = cmd.color,
+			texture_position = vmath.vec2(char.texture_offset) / font.atlas_size,
+			texture_size     = vmath.vec2(char.texture_size) / font.atlas_size,
+			texture          = font.texture,
+		}
+
+		// flip y
+		// vertex.texture_position.y += vertex.texture_size.y
+		// vertex.texture_size.y *= -1
+
+		append(&renderer.buffer, vertex)
+
+		advance := char.advance
+		if i < len(cmd.text) - 1 {
+			next_code_point := rune(cmd.text[i + 1])
+			pair := graphics.get_kern_pair(code_point, next_code_point)
+			if pair in font.kern_lookup {
+				advance += font.kern_lookup[pair]
+			}
+		}
+
+		position.x += f32(char.advance) * char.scale * scale
+	}
 }

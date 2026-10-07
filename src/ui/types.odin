@@ -1,6 +1,7 @@
 #+feature dynamic-literals
 package ui
 
+import "core:dynlib"
 import "core:mem"
 import "simplex:vmath"
 
@@ -41,6 +42,19 @@ Rect_Command :: struct {
 	position: vmath.vec2,
 	size:     vmath.vec2,
 	color:    vmath.vec4,
+}
+
+Text_Command :: struct {
+	position:  vmath.vec2,
+	color:     vmath.vec4,
+	font_name: string,
+	text:      string,
+	size:      u16,
+}
+
+Render_Command :: union {
+	Rect_Command,
+	Text_Command,
 }
 
 Unit :: enum {
@@ -98,9 +112,40 @@ Style :: struct {
 
 Default_Style :: Style{}
 
+Label_Element :: struct {
+	font_name:    string,
+	content: string,
+	size:    f32,
+	color:   vmath.vec4,
+}
+
+Label_Node :: struct {
+	using label: Label_Element,
+	lines:       [dynamic]string,
+	position:    vmath.vec2,
+}
+
+// Input_Kind :: struct {
+// 	content:     string,
+// 	cursor:      i32,
+// 	selectStart: i32, // -1 is none
+// 	focused:     bool,
+// }
+
+Element_Kind :: union {
+	Label_Element,
+	// Input_Kind,
+}
+
+Node_Kind :: union {
+	Label_Node,
+	// Input_Kind,
+}
+
 Node :: struct {
 	id:              ID,
 	using style:     Style,
+	kind:            Node_Kind,
 	retained_width:  f32,
 	retained_height: f32,
 	position:        vmath.vec2,
@@ -111,6 +156,7 @@ Node :: struct {
 
 Element :: struct {
 	style:     Style,
+	kind:      Element_Kind,
 	// on_click:  Callback,
 	key:       u64,
 	has_key:   bool,

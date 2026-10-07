@@ -3,6 +3,12 @@ package ui
 
 import "simplex:vmath"
 
+Measure_Text_Options :: struct {
+	font_size: f32,
+}
+
+Measure_Text :: proc(text: string, opts: Measure_Text_Options) -> f32
+
 parent_flagged :: proc(node: ^Node) -> bool {
 	cur := node.parent
 	for cur != nil && !(.Layout_Root in cur.dirty) {cur = cur.parent}
@@ -24,7 +30,7 @@ layout :: proc(tree: ^Tree, surface_size: vmath.vec2) {
 
 		// grow mode is most likely a layout boundary but sometimes it isnt
 		// as seen here. So sometimes we do a double layout (or more if this happens more than once per roort)
-        // but most of the time this never happens so its worth
+		// but most of the time this never happens so its worth
 		if prev != after && speculative_boundary(root) && root.parent != nil {
 			layout_subtree(root.parent, surface_size)
 		}
@@ -41,6 +47,7 @@ layout_subtree :: proc(node: ^Node, surface_size: vmath.vec2) {
 	grow_pass(node, surface_size, .Width)
 
 	// Wrap text
+	text_pass(node, proc(_: string, _: Measure_Text_Options) -> f32 {return 200.0})
 
 	// Hug height
 	hug_pass(node, .Height)
@@ -51,6 +58,7 @@ layout_subtree :: proc(node: ^Node, surface_size: vmath.vec2) {
 	// Postitions
 	position_pass(node, .Width)
 	position_pass(node, .Height)
+	position_text(node)
 }
 
 get_size_mode :: proc(n: ^Node, a: Axis) -> SizeMode {
@@ -177,6 +185,44 @@ grow_axis :: proc(node: ^Node, axis: Axis) {
 	}
 }
 
+text_pass :: proc(node: ^Node, measure: Measure_Text) {
+	reverse_breadth_first(node, text_sizing, measure)
+}
+
+text_sizing :: proc(node: ^Node, measure: Measure_Text) {
+	label, is_label := &node.kind.(Label_Node)
+	if !is_label || len(label.content) <= 0 {
+		return
+	}
+	clear(&label.lines)
+	max_width := node.retained_width
+	start := 0
+	end := 0
+
+	for start < len(label.content) {
+		for end < len(label.content) && measure(label.content[start:end], {}) <= max_width {
+			end += 1
+		}
+		len := end - start
+
+		// we can't fit any text in so just add
+		// the whole thing as one line
+		if len <= 0 {
+			append(&label.lines, label.content[:])
+			break
+		}
+
+		// once we reach here the line might be >= max_width
+		// so we'll take a char of the end if possible.
+		if len > 1 {
+			end -= 1
+		}
+
+		append(&label.lines, label.content[start:end])
+		start = end
+	}
+}
+
 position_pass :: proc(node: ^Node, axis: Axis) {
 	breadth_first(node, position_axis, axis)
 }
@@ -284,6 +330,14 @@ position_cross_align :: proc(node: ^Node, axis: Axis) {
 		}
 		set_position(child, axis, pos + offset)
 	}
+}
+
+position_text :: proc(node: ^Node) {
+	breadth_first(node, proc(node: ^Node) {
+		if label, ok := &node.kind.(Label_Node); ok {
+			label.position = node.position + node.padding.left + node.padding.top
+		}
+	})
 }
 
 sum_children :: proc(node: ^Node, axis: Axis) -> f32 {

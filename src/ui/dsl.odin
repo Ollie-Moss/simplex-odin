@@ -1,12 +1,17 @@
 package ui
 
-import "core:fmt"
 import "core:hash/xxhash"
 import "core:mem"
+import "core:strings"
 import "simplex:vmath"
 
-hex :: proc(hex: i32) -> vmath.vec4 {
-	return {f32(hex | 0xFF0000), f32(hex | 0x00FF00), f32(hex | 0x0000FF), 255}
+hex :: proc(color: u32) -> vmath.vec4 {
+	return {
+		f32((color >> 16) & 0xFF) / 255,
+		f32((color >> 8) & 0xFF) / 255,
+		f32(color & 0xFF) / 255,
+		1,
+	}
 }
 
 pixels :: proc(amount: f32) -> Length {
@@ -80,8 +85,21 @@ row :: proc(style: Style, children: ..Child) -> Element {
 	return elem
 }
 
-label :: proc(text: string, style: Style = {}, children: ..Child) -> Element {
-	return {style = style, children = kids(..children)}
+label :: proc {
+	label_string,
+	label_element,
+}
+
+label_string :: proc(text: string, style: Style = {}, children: ..Child) -> Element {
+	return {
+		kind = Label_Element{content = text, color = {1, 1, 1, 1}, size = 24},
+		style = style,
+		children = kids(..children),
+	}
+}
+
+label_element :: proc(label: Label_Element, style: Style = {}, children: ..Child) -> Element {
+	return {kind = label, style = style, children = kids(..children)}
 }
 
 show :: proc(condition: bool, element: Element) -> Child {
@@ -107,6 +125,11 @@ create_node :: proc(tree: ^Tree, id: ID, element: Element) -> ^Node {
 	node.style = element.style
 	node.children = make([dynamic]^Node, tree.allocator)
 
+	switch kind in element.kind {
+	case Label_Element:
+		node.kind = create_label_node(tree, kind)
+	}
+
 	for &child_element in element.children {
 		child_node := create_node(tree, child_id(node.id, &child_element), child_element)
 		child_node.parent = node
@@ -116,10 +139,27 @@ create_node :: proc(tree: ^Tree, id: ID, element: Element) -> ^Node {
 	return node
 }
 
+create_label_node :: proc(tree: ^Tree, element: Label_Element) -> Label_Node {
+	label := Label_Node {
+		label = element,
+		lines = make([dynamic]string, tree.allocator),
+	}
+	label.content = strings.clone(element.content, tree.allocator)
+	return label
+}
+
 update_node :: proc(tree: ^Tree, node: ^Node, element: Element) {
 	if node.layout != element.style.layout {
 		node.layout = element.style.layout
 		mark_dirty(tree, node)
+	}
+
+	switch kind in element.kind {
+	case Label_Element:
+		if node_kind, ok := node.kind.(Label_Node); !ok || node_kind.label != kind {
+			node.kind = create_label_node(tree, kind)
+			mark_dirty(tree, node)
+		}
 	}
 
 	if node.paint != element.style.paint {

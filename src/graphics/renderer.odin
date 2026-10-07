@@ -135,7 +135,7 @@ render :: proc(
 				start   = batch_start,
 				end     = i,
 			}
-			draw_batch(renderer, asset_registry, batch)
+			draw_batch(renderer, asset_registry, batch, shader^)
 			prev_texture = vertex.texture
 			batch_start = i
 		}
@@ -146,7 +146,7 @@ render :: proc(
 		end     = len(buffer),
 	}
 
-	draw_batch(renderer, asset_registry, batch)
+	draw_batch(renderer, asset_registry, batch, shader^)
 	clear(&renderer.buffer)
 }
 
@@ -154,9 +154,13 @@ draw_batch :: proc(
 	renderer: ^BatchRenderer2D,
 	asset_registry: ^assets.Asset_Registry,
 	batch: Batch,
+	shader: Shader,
 ) {
 	update_instance_data(&renderer.batch_mesh, renderer.buffer[batch.start:batch.end])
-	if batch.texture != assets.NULL_ASSET {
+	use_texture := batch.texture != assets.NULL_ASSET
+	shader_set_bool(shader, "useTexture", use_texture)
+
+	if use_texture {
 		texture := assets.get_asset(asset_registry, Texture, batch.texture)
 		bind_texture(texture)
 	}
