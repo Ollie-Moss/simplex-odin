@@ -148,6 +148,11 @@ create_label_node :: proc(tree: ^Tree, element: Label_Element) -> Label_Node {
 	return label
 }
 
+delete_label_node :: proc(tree: ^Tree, label: ^Label_Node) {
+	delete(label.content, tree.allocator)
+	delete(label.lines)
+}
+
 update_node :: proc(tree: ^Tree, node: ^Node, element: Element) {
 	if node.layout != element.style.layout {
 		node.layout = element.style.layout
@@ -157,6 +162,7 @@ update_node :: proc(tree: ^Tree, node: ^Node, element: Element) {
 	switch kind in element.kind {
 	case Label_Element:
 		if node_kind, ok := node.kind.(Label_Node); !ok || node_kind.label != kind {
+			delete_label_node(tree, &node_kind)
 			node.kind = create_label_node(tree, kind)
 			mark_dirty(tree, node)
 		}

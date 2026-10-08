@@ -130,16 +130,6 @@ main :: proc() {
 		cmds := make([dynamic]ui.Render_Command, context.temp_allocator)
 		ui.render(tree.root, &cmds)
 
-		defer delete(cmds)
-		for &cmd in cmds {
-			switch &kind in cmd {
-			case ui.Rect_Command:
-				submit_ui_rect_command(&ui_renderer, &kind)
-			case ui.Text_Command:
-				submit_ui_text_command(&ui_renderer, &kind, font_ptr)
-			}
-		}
-
 		cam := ecs.get_component(&simplex.registry, camera_entity, Camera)
 		cam_trans := ecs.get_component(&simplex.registry, camera_entity, vmath.Transform)
 		cam.viewport_size = view.get_window_size(&simplex.window)
@@ -171,6 +161,22 @@ main :: proc() {
 	core.shutdown(&simplex)
 }
 
+render_ui :: proc(
+	renderer: ^graphics.BatchRenderer2D,
+	asset_registry: ^assets.Asset_Registry,
+	cmds: ^[dynamic]ui.Render_Command,
+) {
+	for &cmd in cmds {
+		switch &kind in cmd {
+		case ui.Rect_Command:
+			submit_ui_rect_command(renderer, &kind)
+		case ui.Text_Command:
+			submit_ui_text_command(renderer, &kind, asset_registry)
+		}
+	}
+
+}
+
 submit_ui_rect_command :: proc(renderer: ^graphics.BatchRenderer2D, cmd: ^ui.Rect_Command) {
 	vertex := graphics.Quad_Vertex_2D {
 		position         = {cmd.position.x, cmd.position.y, 0},
@@ -187,10 +193,11 @@ submit_ui_rect_command :: proc(renderer: ^graphics.BatchRenderer2D, cmd: ^ui.Rec
 submit_ui_text_command :: proc(
 	renderer: ^graphics.BatchRenderer2D,
 	cmd: ^ui.Text_Command,
-	font: ^graphics.Font,
+	asset_registry: ^assets.Asset_Registry,
 ) {
 	position := cmd.position.xy
 	for code_point, i in cmd.text {
+
 		char, scale := graphics.get_character(font, code_point, cmd.size)
 		offset := (f32(cmd.size) - f32(char.texture_size.y)) * scale
 
