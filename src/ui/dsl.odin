@@ -1,5 +1,6 @@
 package ui
 
+import "core:fmt"
 import "core:hash/xxhash"
 import "core:mem"
 import "core:strings"
@@ -92,7 +93,7 @@ label :: proc {
 
 label_string :: proc(text: string, style: Style = {}, children: ..Child) -> Element {
 	return {
-		kind = Label_Element{content = text, color = {1, 1, 1, 1}, size = 24},
+		kind = Label_Element{font_name = "Arial", content = text, color = {1, 1, 1, 1}, size = 24},
 		style = style,
 		children = kids(..children),
 	}
@@ -235,6 +236,41 @@ delete_subtree :: proc(tree: ^Tree, node: ^Node) {
 	free(node, tree.allocator)
 }
 
+make_font_provider :: proc(allocator := context.allocator) -> ^Font_Provider {
+	font_provider := new(Font_Provider, allocator)
+	if font_provider == nil do return nil
+
+	font_provider.allocator = allocator
+	font_provider.store = make(map[string]rawptr, allocator)
+	return font_provider
+}
+
+delete_font_provider :: proc(font_provider: ^Font_Provider) {
+	free_all(font_provider.allocator)
+	free(font_provider)
+}
+
+resolve_font :: proc($T: typeid, font_provider: ^Font_Provider, font_name: string) -> ^T {
+	font, ok := font_provider.store[font_name]
+	if !ok {
+		panic(fmt.tprint("No font in Font_Provider with name ", font_name))
+	}
+
+	return cast(^T)font
+}
+
+store_font :: proc(font_name: string, font_provider: ^Font_Provider, font: $T) {
+	if font_name in font_provider.store {
+		panic(fmt.tprint("Font already in Font_Provider with name ", font_name))
+	}
+
+	font_ptr, err := mem.new_clone(font, font_provider.allocator)
+	if err != nil {
+		panic(fmt.tprint("Failed to allocate font: ", font_name))
+	}
+	font_provider.store[font_name] = font_ptr
+}
+
 make_tree :: proc(allocator := context.allocator) -> ^Tree {
 	tree := new(Tree, allocator)
 	if tree == nil do return nil
@@ -242,6 +278,7 @@ make_tree :: proc(allocator := context.allocator) -> ^Tree {
 	tree.allocator = allocator
 	tree.root = nil
 	tree.layout_roots = make([dynamic]^Node, allocator)
+	tree.font_provider = make_font_provider(allocator)
 
 	return tree
 }

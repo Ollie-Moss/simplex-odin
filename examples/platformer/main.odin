@@ -19,7 +19,7 @@ PlayerController :: struct {
 
 main :: proc() {
 	opts := core.Simplex_Options {
-		windowOptions = {windowSize = {1920, 1080}, title = "Simplex"},
+		windowOptions = {windowSize = {1280, 720}, title = "Simplex"},
 		backgroundColor = {0.173, 0.169, 0.180, 1.00},
 	}
 
@@ -90,6 +90,8 @@ main :: proc() {
 
 	ui_renderer := graphics.make_renderer_2D(spriteShader)
 	tree := ui.make_tree()
+	ui.store_font("Arial", tree.font_provider, font)
+
 	defer ui.delete_tree(tree)
 
 	for !core.should_quit(&simplex) {
@@ -129,6 +131,7 @@ main :: proc() {
 		ui.layout(tree, surface_size)
 		cmds := make([dynamic]ui.Render_Command, context.temp_allocator)
 		ui.render(tree.root, &cmds)
+		render_ui(&ui_renderer, &simplex.asset_registry, tree.font_provider, &cmds)
 
 		cam := ecs.get_component(&simplex.registry, camera_entity, Camera)
 		cam_trans := ecs.get_component(&simplex.registry, camera_entity, vmath.Transform)
@@ -164,6 +167,7 @@ main :: proc() {
 render_ui :: proc(
 	renderer: ^graphics.BatchRenderer2D,
 	asset_registry: ^assets.Asset_Registry,
+	font_provider: ^ui.Font_Provider,
 	cmds: ^[dynamic]ui.Render_Command,
 ) {
 	for &cmd in cmds {
@@ -171,7 +175,7 @@ render_ui :: proc(
 		case ui.Rect_Command:
 			submit_ui_rect_command(renderer, &kind)
 		case ui.Text_Command:
-			submit_ui_text_command(renderer, &kind, asset_registry)
+			submit_ui_text_command(renderer, asset_registry, font_provider, &kind)
 		}
 	}
 
@@ -192,9 +196,13 @@ submit_ui_rect_command :: proc(renderer: ^graphics.BatchRenderer2D, cmd: ^ui.Rec
 
 submit_ui_text_command :: proc(
 	renderer: ^graphics.BatchRenderer2D,
-	cmd: ^ui.Text_Command,
 	asset_registry: ^assets.Asset_Registry,
+	font_provider: ^ui.Font_Provider,
+	cmd: ^ui.Text_Command,
 ) {
+
+	font_handle := ui.resolve_font(graphics.Font_Handle, font_provider, cmd.font_name)
+	font := assets.get_asset(asset_registry, graphics.Font, font_handle^)
 	position := cmd.position.xy
 	for code_point, i in cmd.text {
 

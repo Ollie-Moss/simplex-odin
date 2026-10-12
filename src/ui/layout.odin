@@ -200,22 +200,19 @@ text_sizing :: proc(node: ^Node, measure: Measure_Text) {
 	end := 0
 
 	for start < len(label.content) {
-		for end < len(label.content) && measure(label.content[start:end], {}) <= max_width {
+		end := start
+		for end < len(label.content) {
+			measured := measure(label.content[start:end + 1], {})
+			if measured > max_width {
+				break
+			}
 			end += 1
 		}
-		len := end - start
 
-		// we can't fit any text in so just add
-		// the whole thing as one line
-		if len <= 0 {
-			append(&label.lines, label.content[:])
-			break
-		}
-
-		// once we reach here the line might be >= max_width
-		// so we'll take a char of the end if possible.
-		if len > 1 {
-			end -= 1
+		// not even one char fits, so force progress with a single char
+		// to avoid an infinite loop
+		if end == start {
+			end += 1
 		}
 
 		append(&label.lines, label.content[start:end])

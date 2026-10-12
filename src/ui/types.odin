@@ -113,10 +113,10 @@ Style :: struct {
 Default_Style :: Style{}
 
 Label_Element :: struct {
-	font_name:    string,
-	content: string,
-	size:    f32,
-	color:   vmath.vec4,
+	font_name: string,
+	content:   string,
+	size:      f32,
+	color:     vmath.vec4,
 }
 
 Label_Node :: struct {
@@ -165,11 +165,17 @@ Element :: struct {
 }
 
 Tree :: struct {
-	root:         ^Node,
-	allocator:    mem.Allocator,
-	layout_roots: [dynamic]^Node,
+	root:          ^Node,
+	allocator:     mem.Allocator,
+	layout_roots:  [dynamic]^Node,
+	font_provider: ^Font_Provider,
 }
 
 Dirty_Flag :: enum {
 	Layout_Root,
+}
+
+Font_Provider :: struct {
+	allocator: mem.Allocator,
+	store:     map[string]rawptr,
 }
