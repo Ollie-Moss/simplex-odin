@@ -3,12 +3,6 @@ package ui
 
 import "simplex:vmath"
 
-Measure_Text_Options :: struct {
-	font_size: f32,
-}
-
-Measure_Text :: proc(text: string, opts: Measure_Text_Options) -> f32
-
 parent_flagged :: proc(node: ^Node) -> bool {
 	cur := node.parent
 	for cur != nil && !(.Layout_Root in cur.dirty) {cur = cur.parent}
@@ -19,27 +13,27 @@ parent_flagged :: proc(node: ^Node) -> bool {
 layout :: proc(tree: ^Tree, surface_size: vmath.vec2) {
 	if (tree.root.width_mode == .Grow || tree.root.height_mode == .Grow) &&
 	   surface_size != {tree.root.retained_width, tree.root.retained_height} {
-		layout_subtree(tree.root, surface_size)
+		layout_subtree(tree.root, surface_size, tree.backend)
 		return
 	}
 	for root in tree.layout_roots {
 		if parent_flagged(root) do continue
 		prev := vmath.vec2{root.retained_width, root.retained_height}
-		layout_subtree(root, surface_size)
+		layout_subtree(root, surface_size, tree.backend)
 		after := vmath.vec2{root.retained_width, root.retained_height}
 
 		// grow mode is most likely a layout boundary but sometimes it isnt
 		// as seen here. So sometimes we do a double layout (or more if this happens more than once per roort)
 		// but most of the time this never happens so its worth
 		if prev != after && speculative_boundary(root) && root.parent != nil {
-			layout_subtree(root.parent, surface_size)
+			layout_subtree(root.parent, surface_size, tree.backend)
 		}
 	}
 	for root in tree.layout_roots {root.dirty -= {.Layout_Root}}
 	clear(&tree.layout_roots)
 }
 
-layout_subtree :: proc(node: ^Node, surface_size: vmath.vec2) {
+layout_subtree :: proc(node: ^Node, surface_size: vmath.vec2, backend: ^Text_Backend) {
 	// Hug width
 	hug_pass(node, .Width)
 
@@ -47,7 +41,7 @@ layout_subtree :: proc(node: ^Node, surface_size: vmath.vec2) {
 	grow_pass(node, surface_size, .Width)
 
 	// Wrap text
-	text_pass(node, proc(_: string, _: Measure_Text_Options) -> f32 {return 200.0})
+	text_pass(node, backend)
 
 	// Hug height
 	hug_pass(node, .Height)
@@ -185,11 +179,11 @@ grow_axis :: proc(node: ^Node, axis: Axis) {
 	}
 }
 
-text_pass :: proc(node: ^Node, measure: Measure_Text) {
-	reverse_breadth_first(node, text_sizing, measure)
+text_pass :: proc(node: ^Node, backend: ^Text_Backend) {
+	reverse_breadth_first(node, text_sizing, backend)
 }
 
-text_sizing :: proc(node: ^Node, measure: Measure_Text) {
+text_sizing :: proc(node: ^Node, backend: ^Text_Backend) {
 	label, is_label := &node.kind.(Label_Node)
 	if !is_label || len(label.content) <= 0 {
 		return
@@ -202,7 +196,11 @@ text_sizing :: proc(node: ^Node, measure: Measure_Text) {
 	for start < len(label.content) {
 		end := start
 		for end < len(label.content) {
-			measured := measure(label.content[start:end + 1], {})
+			measured := backend.measure(
+				backend,
+				label.content[start:end + 1],
+				Text_Measure_Options{font_name = label.font_name, font_size = label.size},
+			)
 			if measured > max_width {
 				break
 			}

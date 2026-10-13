@@ -165,17 +165,25 @@ Element :: struct {
 }
 
 Tree :: struct {
-	root:          ^Node,
-	allocator:     mem.Allocator,
-	layout_roots:  [dynamic]^Node,
-	font_provider: ^Font_Provider,
+	root:         ^Node,
+	allocator:    mem.Allocator,
+	layout_roots: [dynamic]^Node,
+	backend:      ^Text_Backend,
 }
 
 Dirty_Flag :: enum {
 	Layout_Root,
 }
 
-Font_Provider :: struct {
+Text_Backend :: struct {
 	allocator: mem.Allocator,
-	store:     map[string]rawptr,
+	measure:   Text_Measure_Proc,
+	data:      rawptr, // user injected services for backend procs
 }
+
+Text_Measure_Options :: struct {
+	font_name: string,
+	font_size: f32,
+}
+
+Text_Measure_Proc :: proc(this: ^Text_Backend, text: string, opts: Text_Measure_Options) -> f32

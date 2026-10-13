@@ -236,54 +236,52 @@ delete_subtree :: proc(tree: ^Tree, node: ^Node) {
 	free(node, tree.allocator)
 }
 
-make_font_provider :: proc(allocator := context.allocator) -> ^Font_Provider {
-	font_provider := new(Font_Provider, allocator)
-	if font_provider == nil do return nil
+make_text_backend :: proc(
+	data: rawptr,
+	measure: Text_Measure_Proc,
+	allocator := context.allocator,
+) -> ^Text_Backend {
+	backend := new(Text_Backend, allocator)
+	if backend == nil do return nil
 
-	font_provider.allocator = allocator
-	font_provider.store = make(map[string]rawptr, allocator)
-	return font_provider
+	backend.allocator = allocator
+	backend.measure = measure
+	backend.data = data
+	return backend
 }
 
-delete_font_provider :: proc(font_provider: ^Font_Provider) {
-	free_all(font_provider.allocator)
-	free(font_provider)
+delete_text_backend :: proc(backend: ^Text_Backend) {
+	free_all(backend.allocator)
+	free(backend)
 }
 
-resolve_font :: proc($T: typeid, font_provider: ^Font_Provider, font_name: string) -> ^T {
-	font, ok := font_provider.store[font_name]
-	if !ok {
-		panic(fmt.tprint("No font in Font_Provider with name ", font_name))
-	}
+make_tree :: proc(backend: ^Text_Backend, allocator := context.allocator) -> ^Tree {
+	assert(backend != nil, "backend must not be nil")
+	assert(
+		backend.allocator == allocator,
+		"backend must be created with the same allocator as the tree",
+	)
 
-	return cast(^T)font
-}
-
-store_font :: proc(font_name: string, font_provider: ^Font_Provider, font: $T) {
-	if font_name in font_provider.store {
-		panic(fmt.tprint("Font already in Font_Provider with name ", font_name))
-	}
-
-	font_ptr, err := mem.new_clone(font, font_provider.allocator)
-	if err != nil {
-		panic(fmt.tprint("Failed to allocate font: ", font_name))
-	}
-	font_provider.store[font_name] = font_ptr
-}
-
-make_tree :: proc(allocator := context.allocator) -> ^Tree {
 	tree := new(Tree, allocator)
 	if tree == nil do return nil
 
 	tree.allocator = allocator
 	tree.root = nil
 	tree.layout_roots = make([dynamic]^Node, allocator)
-	tree.font_provider = make_font_provider(allocator)
-
+	tree.backend = backend
 	return tree
 }
 
 delete_tree :: proc(tree: ^Tree) {
-	free_all(tree.allocator)
+	delete_node(tree.root)
+	delete(tree.layout_roots)
+	delete_text_backend(tree.backend)
 	free(tree)
+}
+
+delete_node :: proc(node: ^Node) {
+	for &child in node.children {
+		delete_node(child)
+	}
+	if node != nil do free(node)
 }

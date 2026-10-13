@@ -10,6 +10,7 @@ import "simplex:ecs"
 import "simplex:graphics"
 import "simplex:input"
 import "simplex:ui"
+import "simplex:ui_host"
 import "simplex:view"
 import "simplex:vmath"
 
@@ -89,8 +90,13 @@ main :: proc() {
 	// }
 
 	ui_renderer := graphics.make_renderer_2D(spriteShader)
-	tree := ui.make_tree()
-	ui.store_font("Arial", tree.font_provider, font)
+
+	font_provider := ui_host.make_font_provider(&simplex.asset_registry)
+	defer ui_host.delete_font_provider(font_provider)
+	backend := ui_host.make_backend(font_provider)
+
+	tree := ui.make_tree(backend)
+	ui_host.store_font(font_provider, "Arial", font)
 
 	defer ui.delete_tree(tree)
 
@@ -131,7 +137,7 @@ main :: proc() {
 		ui.layout(tree, surface_size)
 		cmds := make([dynamic]ui.Render_Command, context.temp_allocator)
 		ui.render(tree.root, &cmds)
-		render_ui(&ui_renderer, &simplex.asset_registry, tree.font_provider, &cmds)
+		ui_host.render_ui(&ui_renderer, font_provider, &cmds)
 
 		cam := ecs.get_component(&simplex.registry, camera_entity, Camera)
 		cam_trans := ecs.get_component(&simplex.registry, camera_entity, vmath.Transform)
@@ -162,78 +168,4 @@ main :: proc() {
 	}
 
 	core.shutdown(&simplex)
-}
-
-render_ui :: proc(
-	renderer: ^graphics.BatchRenderer2D,
-	asset_registry: ^assets.Asset_Registry,
-	font_provider: ^ui.Font_Provider,
-	cmds: ^[dynamic]ui.Render_Command,
-) {
-	for &cmd in cmds {
-		switch &kind in cmd {
-		case ui.Rect_Command:
-			submit_ui_rect_command(renderer, &kind)
-		case ui.Text_Command:
-			submit_ui_text_command(renderer, asset_registry, font_provider, &kind)
-		}
-	}
-
-}
-
-submit_ui_rect_command :: proc(renderer: ^graphics.BatchRenderer2D, cmd: ^ui.Rect_Command) {
-	vertex := graphics.Quad_Vertex_2D {
-		position         = {cmd.position.x, cmd.position.y, 0},
-		size             = cmd.size,
-		color            = cmd.color,
-		texture_position = cmd.position,
-		texture_size     = {1, 1},
-		texture          = assets.NULL_ASSET,
-	}
-
-	append(&renderer.buffer, vertex)
-}
-
-submit_ui_text_command :: proc(
-	renderer: ^graphics.BatchRenderer2D,
-	asset_registry: ^assets.Asset_Registry,
-	font_provider: ^ui.Font_Provider,
-	cmd: ^ui.Text_Command,
-) {
-
-	font_handle := ui.resolve_font(graphics.Font_Handle, font_provider, cmd.font_name)
-	font := assets.get_asset(asset_registry, graphics.Font, font_handle^)
-	position := cmd.position.xy
-	for code_point, i in cmd.text {
-
-		char, scale := graphics.get_character(font, code_point, cmd.size)
-		offset := (f32(cmd.size) - f32(char.texture_size.y)) * scale
-
-		descent := f32(char.texture_size.y - char.y_bearing) * scale
-		vertex := graphics.Quad_Vertex_2D {
-			position         = {position.x, position.y + offset + descent, 0},
-			size             = vmath.vec2(char.texture_size) * scale,
-			color            = cmd.color,
-			texture_position = vmath.vec2(char.texture_offset) / font.atlas_size,
-			texture_size     = vmath.vec2(char.texture_size) / font.atlas_size,
-			texture          = font.texture,
-		}
-
-		// flip y
-		// vertex.texture_position.y += vertex.texture_size.y
-		// vertex.texture_size.y *= -1
-
-		append(&renderer.buffer, vertex)
-
-		advance := char.advance
-		if i < len(cmd.text) - 1 {
-			next_code_point := rune(cmd.text[i + 1])
-			pair := graphics.get_kern_pair(code_point, next_code_point)
-			if pair in font.kern_lookup {
-				advance += font.kern_lookup[pair]
-			}
-		}
-
-		position.x += f32(char.advance) * char.scale * scale
-	}
 }
