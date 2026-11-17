@@ -37,11 +37,12 @@ Vertex_3D :: struct {
 }
 
 Quad_Vertex_2D :: struct {
-	position:         vmath.vec2,
+	position:         vmath.vec3,
 	size:             vmath.vec2,
 	color:            vmath.vec4,
 	texture_position: vmath.vec2,
 	texture_size:     vmath.vec2,
+	texture:          Texture_Handle, // not used on GPU
 }
 
 @(rodata)
@@ -92,7 +93,7 @@ layout_instance_quad_2d := Vertex_Layout {
 	attributes = {
 		{
 			location = 1,
-			property_vector_size = 2,
+			property_vector_size = 3,
 			type = .Float,
 			offset = offset_of(Quad_Vertex_2D, position),
 			divsor = 1,

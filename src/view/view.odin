@@ -3,7 +3,6 @@ package view
 import "base:runtime"
 import "core:fmt"
 import "core:strings"
-import "simplex:input"
 import "simplex:vmath"
 import "vendor:OpenGL"
 import "vendor:glfw"
@@ -27,6 +26,14 @@ Window :: struct {
 Window_Options :: struct {
 	windowSize: vmath.ivec2,
 	title:      string,
+}
+
+update_title :: proc(window: ^Window, title: string) {
+	glfw.SetWindowTitle(window.windowHandle, strings.clone_to_cstring(title))
+}
+get_window_size :: proc(window: ^Window) -> vmath.ivec2 {
+	w, h := glfw.GetWindowSize(window.windowHandle)
+	return {w, h}
 }
 
 update :: proc(window: Window) {
@@ -63,6 +70,7 @@ create_window :: proc(options: Window_Options) -> Window {
 
 	glfw.MakeContextCurrent(windowHandle)
 	glfw.SetFramebufferSizeCallback(windowHandle, framebuffer_size_callback)
+	// glfw.SwapInterval(-1)
 
 	view__window_size = {options.windowSize.x, options.windowSize.y}
 	return Window{windowHandle = windowHandle}

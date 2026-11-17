@@ -1,7 +1,7 @@
 package graphics
 
-import "simplex:assets"
 import "core:strings"
+import "simplex:assets"
 import gl "vendor:OpenGL"
 import stb_image "vendor:stb/image"
 
@@ -71,7 +71,6 @@ Texture_Config :: struct {
 }
 
 load_texture :: proc(registry: ^assets.Asset_Registry, config: Texture_Config) -> Texture_Handle {
-
 	assets.register_asset_list(registry, Texture)
 
 	texture := Texture {
@@ -93,14 +92,13 @@ load_texture :: proc(registry: ^assets.Asset_Registry, config: Texture_Config) -
 		&nrChannels,
 		4,
 	)
+	defer stb_image.image_free(data)
 
 	if data == nil {
 		panic("STB failed to load image")
 	}
 
 	generate_texture(&texture, data)
-
-	stb_image.image_free(data)
 
 	return assets.insert_asset(registry, texture)
 }
@@ -134,4 +132,8 @@ generate_texture :: proc(texture: ^Texture, data: rawptr) {
 bind_texture :: proc(texture: ^Texture) {
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, texture.handle)
+}
+clear_texture :: proc() {
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, 0)
 }
