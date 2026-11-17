@@ -12,6 +12,7 @@ Font_Provider :: struct {
 	asset_registry: ^assets.Asset_Registry,
 }
 
+// Does not own the Asset_Registry, only borrows
 make_font_provider :: proc(
 	asset_registry: ^assets.Asset_Registry,
 	allocator := context.allocator,
@@ -30,6 +31,7 @@ delete_font_provider :: proc(font_provider: ^Font_Provider) {
 	free(font_provider)
 }
 
+// This will make a font accesible to styles via a name as a string
 store_font :: proc(
 	font_provider: ^Font_Provider,
 	font_name: string,

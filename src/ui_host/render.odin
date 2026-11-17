@@ -8,9 +8,9 @@ import "simplex:vmath"
 render_ui :: proc(
 	renderer: ^graphics.BatchRenderer2D,
 	font_provider: ^Font_Provider,
-	cmds: ^[dynamic]ui.Render_Command,
+	cmd_buf: ^[dynamic]ui.Render_Command,
 ) {
-	for &cmd in cmds {
+	for &cmd in cmd_buf {
 		switch &kind in cmd {
 		case ui.Rect_Command:
 			submit_ui_rect_command(renderer, &kind)

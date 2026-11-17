@@ -255,6 +255,7 @@ delete_text_backend :: proc(backend: ^Text_Backend) {
 	free(backend)
 }
 
+// Takes ownership of the backend
 make_tree :: proc(backend: ^Text_Backend, allocator := context.allocator) -> ^Tree {
 	assert(backend != nil, "backend must not be nil")
 	assert(

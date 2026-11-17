@@ -160,7 +160,7 @@ main :: proc() {
 		graphics.render(
 			&ui_renderer,
 			&simplex.asset_registry,
-			calculate_projection(vmath.vec2(view.get_window_size(&simplex.window))),
+			graphics.calculate_projection(vmath.vec2(view.get_window_size(&simplex.window))),
 		)
 		view.update(simplex.window)
 

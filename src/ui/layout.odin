@@ -34,22 +34,17 @@ layout :: proc(tree: ^Tree, surface_size: vmath.vec2) {
 }
 
 layout_subtree :: proc(node: ^Node, surface_size: vmath.vec2, backend: ^Text_Backend) {
-	// Hug width
-	hug_pass(node, .Width)
+	hug_pass(node, .Width, backend)
 
-	// Grow width
 	grow_pass(node, surface_size, .Width)
 
 	// Wrap text
 	text_pass(node, backend)
 
-	// Hug height
-	hug_pass(node, .Height)
+	hug_pass(node, .Height, backend)
 
-	// Grow height
 	grow_pass(node, surface_size, .Height)
 
-	// Postitions
 	position_pass(node, .Width)
 	position_pass(node, .Height)
 	position_text(node)
@@ -104,11 +99,11 @@ is_main_axis :: proc(n: ^Node, a: Axis) -> bool {
 	return horizontal || vertical
 }
 
-hug_pass :: proc(node: ^Node, axis: Axis) {
-	reverse_breadth_first(node, hug_axis, axis)
+hug_pass :: proc(node: ^Node, axis: Axis, backend: ^Text_Backend) {
+	reverse_breadth_first(node, hug_axis, axis, backend)
 }
 
-hug_axis :: proc(node: ^Node, axis: Axis) {
+hug_axis :: proc(node: ^Node, axis: Axis, backend: ^Text_Backend) {
 	if (node.width_mode != .Hug && node.width_mode != .Grow) {
 		return
 	}
@@ -188,6 +183,16 @@ text_sizing :: proc(node: ^Node, backend: ^Text_Backend) {
 	if !is_label || len(label.content) <= 0 {
 		return
 	}
+
+	measured := backend.measure(
+		backend,
+		label.content,
+		Text_Measure_Options{font_name = label.font_name, font_size = label.size},
+	)
+	if get_retained(node, .Width)^ == 0 && get_size_mode(node, .Width) == .Hug {
+		set_retained(node, .Width, measured)
+	}
+
 	clear(&label.lines)
 	max_width := node.retained_width
 	start := 0
@@ -356,47 +361,60 @@ get_largest_child :: proc(node: ^Node, axis: Axis) -> f32 {
 }
 
 breadth_first :: proc {
-	breadth_first_no_args,
-	breadth_first_one_arg,
-	breadth_first_one_arg_passed,
+	breadth_first0,
+	breadth_first1,
+	breadth_first1_with_return,
 }
 
-breadth_first_no_args :: proc(node: ^Node, call_back: proc(node: ^Node)) {
+breadth_first0 :: proc(node: ^Node, call_back: proc(node: ^Node)) {
 	call_back(node)
 	for child in node.children {
-		breadth_first_no_args(child, call_back)
+		breadth_first0(child, call_back)
 	}
 }
 
-breadth_first_one_arg :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A), a: A) {
+breadth_first1 :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A), a: A) {
 	call_back(node, a)
 	for child in node.children {
-		breadth_first_one_arg(child, call_back, a)
+		breadth_first1(child, call_back, a)
 	}
 }
 
-breadth_first_one_arg_passed :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A) -> A, a: A) {
+breadth_first1_with_return :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A) -> A, a: A) {
 	result := call_back(node, a)
 	for child in node.children {
-		breadth_first_one_arg(child, call_back, result)
+		breadth_first1(child, call_back, result)
 	}
 }
 
 reverse_breadth_first :: proc {
-	reverse_breadth_first_no_args,
-	reverse_breadth_first_one_arg,
+	reverse_breadth_first0,
+	reverse_breadth_first1,
+	reverse_breadth_first2,
 }
 
-reverse_breadth_first_no_args :: proc(node: ^Node, call_back: proc(node: ^Node)) {
+reverse_breadth_first0 :: proc(node: ^Node, call_back: proc(node: ^Node)) {
 	for child in node.children {
-		reverse_breadth_first_no_args(child, call_back)
+		reverse_breadth_first0(child, call_back)
 	}
 	call_back(node)
 }
 
-reverse_breadth_first_one_arg :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A), a: A) {
+reverse_breadth_first1 :: proc(node: ^Node, call_back: proc(node: ^Node, a: $A), a: A) {
 	for child in node.children {
-		reverse_breadth_first_one_arg(child, call_back, a)
+		reverse_breadth_first1(child, call_back, a)
 	}
 	call_back(node, a)
+}
+
+reverse_breadth_first2 :: proc(
+	node: ^Node,
+	call_back: proc(node: ^Node, a: $A, b: $B),
+	a: A,
+	b: B,
+) {
+	for child in node.children {
+		reverse_breadth_first2(child, call_back, a, b)
+	}
+	call_back(node, a, b)
 }
